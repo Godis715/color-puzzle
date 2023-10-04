@@ -8,7 +8,7 @@ function App() {
     paper.setup('canvas');
     // Create a simple drawing tool:
     const tool = new Tool();
-    let path: paper.Path | undefined = undefined;
+    let path: paper.Path | undefined;
 
     // Define a mousedown and mousedrag handler
     tool.on('mousedown', (event: paper.ToolEvent) => {
