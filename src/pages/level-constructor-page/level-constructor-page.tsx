@@ -1,8 +1,9 @@
-import { useEffect, useLayoutEffect, useMemo, useState } from 'react';
-import SVG from 'react-inlinesvg';
+import { useEffect, useState } from 'react';
 import paper from 'paper';
 
 import './style.css';
+
+const CANVAS_ID = 'paper-canvas';
 
 function getFileContentAsText(file: File): Promise<string> {
   const reader = new FileReader();
@@ -36,55 +37,13 @@ export function LevelConstructorPage(): JSX.Element {
   const [group, setGroup] = useState<paper.Layer>();
 
   const fitView = (): void => {
-    if (!group) return;
-
-    viewFitBounds(paper.project.view, group.bounds);
-  };
-
-  const handleUploadFragmentsFile = async (
-    ev: React.ChangeEvent<HTMLInputElement>
-  ): Promise<void> => {
-    const file = ev.target.files?.item(0) ?? null;
-
-    if (!file) return;
-
-    const text = await getFileContentAsText(file);
-
-    if (!fragmentsLayer) return;
-
-    fragmentsLayer.removeChildren();
-
-    if (!text) return;
-
-    paper.project.importSVG(text).addTo(fragmentsLayer);
-
-    fragmentsLayer.children.at(0)?.children.at(0)?.remove();
-
-    fitView();
-  };
-
-  const handleUploadDecorationFile = async (
-    ev: React.ChangeEvent<HTMLInputElement>
-  ): Promise<void> => {
-    const file = ev.target.files?.item(0) ?? null;
-
-    if (!file) return;
-
-    const text = await getFileContentAsText(file);
-
-    if (!decorationsLayer) return;
-
-    decorationsLayer.removeChildren();
-
-    if (!text) return;
-
-    paper.project.importSVG(text).addTo(decorationsLayer);
-
-    decorationsLayer.children.at(0)?.children.at(0)?.remove();
+    if (group) {
+      viewFitBounds(paper.project.view, group.bounds);
+    }
   };
 
   useEffect(() => {
-    paper.setup('paper-canvas');
+    paper.setup(CANVAS_ID);
 
     const g = new paper.Layer();
 
@@ -103,12 +62,67 @@ export function LevelConstructorPage(): JSX.Element {
     return () => paper.project.clear();
   }, []);
 
+  const handleUploadFragmentsFile = async (
+    ev: React.ChangeEvent<HTMLInputElement>
+  ): Promise<void> => {
+    const file = ev.target.files?.item(0) ?? null;
+
+    if (!file) return;
+
+    const svgText = await getFileContentAsText(file);
+
+    if (!fragmentsLayer) return;
+
+    fragmentsLayer.removeChildren();
+
+    if (!svgText) return;
+
+    const item = paper.project.importSVG(svgText).addTo(fragmentsLayer);
+
+    // Paper adds rectangle, that represents canvas, as first child, when importing svg
+    item.children.at(0)?.remove();
+
+    fitView();
+  };
+
+  const handleUploadDecorationFile = async (
+    ev: React.ChangeEvent<HTMLInputElement>
+  ): Promise<void> => {
+    const file = ev.target.files?.item(0) ?? null;
+
+    if (!file) return;
+
+    const svgText = await getFileContentAsText(file);
+
+    if (!decorationsLayer) return;
+
+    decorationsLayer.removeChildren();
+
+    if (!svgText) return;
+
+    decorationsLayer.importSVG(svgText);
+
+    // Paper adds rectangle, that represents canvas, as first child, when importing svg
+    decorationsLayer.children.at(0)?.children.at(0)?.remove();
+
+    fitView();
+  };
+
   return (
     <div>
       <div>Level Constructor</div>
 
       <div>
-        <canvas data-paper-resize="true" id="paper-canvas" />
+        <div>
+          <ul>
+            <li>Frag 1</li>
+            <li>Frag 2</li>
+            <li>Frag 3</li>
+          </ul>
+        </div>
+        <div>
+          <canvas data-paper-resize="true" id={CANVAS_ID} />
+        </div>
       </div>
 
       <div>
