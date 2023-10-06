@@ -27,6 +27,11 @@ export const selectNeighborsGraph = createSelector(
   (state) => state.neighborsGraph
 );
 
+export const selectFragments = createSelector(
+  selectLevelConstructorState,
+  (state) => state.fragments
+);
+
 export const selectHoveredFragmentsIds = createSelector(
   selectGrouping,
   selectHoveredGroupId,

@@ -20,11 +20,17 @@ import {
 
 export const modelName = 'levelConstructor';
 
+export type Fragment = {
+  id: string;
+  data: string;
+};
+
 export type LevelConstructorState = {
   hoveredGroupId: string | null;
   activeGroupsIds: string[];
   grouping: Grouping;
   neighborsGraph: UndirectedGraph;
+  fragments: Fragment[];
 };
 
 const initialState: LevelConstructorState = {
@@ -32,6 +38,7 @@ const initialState: LevelConstructorState = {
   activeGroupsIds: [],
   grouping: [],
   neighborsGraph: [],
+  fragments: [],
 };
 
 function toggleArrayElement<T>(array: T[], element: T): T[] {
@@ -44,7 +51,7 @@ export const levelConstructorSlice = createSlice({
   name: modelName,
   initialState,
   reducers: {
-    setHoveredGroupId: (state, action: PayloadAction<string | null>) => {
+    setHoveredFragmentId: (state, action: PayloadAction<string | null>) => {
       const { grouping } = state;
 
       const fragmentId = action.payload;
@@ -57,7 +64,7 @@ export const levelConstructorSlice = createSlice({
       state.hoveredGroupId = getGroupByElement(grouping, fragmentId);
     },
 
-    setActiveGroupId: (state, action: PayloadAction<string>) => {
+    setActiveFragmentId: (state, action: PayloadAction<string>) => {
       const { grouping, activeGroupsIds } = state;
 
       const fragmentId = action.payload;
@@ -73,7 +80,7 @@ export const levelConstructorSlice = createSlice({
       state.activeGroupsIds = isMultiSelect || isSelfSelect ? [groupId] : [];
     },
 
-    toggleActiveGroupId: (state, action: PayloadAction<string>) => {
+    toggleActiveFragmentId: (state, action: PayloadAction<string>) => {
       const { grouping, activeGroupsIds } = state;
 
       const fragmentId = action.payload;
@@ -85,12 +92,7 @@ export const levelConstructorSlice = createSlice({
       state.activeGroupsIds = toggleArrayElement(activeGroupsIds, groupId);
     },
 
-    createGrouping: (state, action: PayloadAction<string[]>) => {
-      const fragmentIds = action.payload;
-      state.grouping = createGrouping(fragmentIds);
-    },
-
-    uniteActiveGroups: (state) => {
+    uniteActive: (state) => {
       const { activeGroupsIds, grouping, neighborsGraph } = state;
 
       const isMultiSelect = activeGroupsIds.length > 1;
@@ -110,7 +112,7 @@ export const levelConstructorSlice = createSlice({
       state.activeGroupsIds = [newGroupId];
     },
 
-    breakActiveGroup: (state) => {
+    breakActive: (state) => {
       const { activeGroupsIds, grouping, neighborsGraph } = state;
 
       const isSingleSelect = activeGroupsIds.length === 1;
@@ -126,6 +128,16 @@ export const levelConstructorSlice = createSlice({
 
     setNeighborsGraph: (state, action: PayloadAction<UndirectedGraph>) => {
       state.neighborsGraph = action.payload;
+    },
+
+    setFragments: (state, action: PayloadAction<Fragment[]>) => {
+      state.fragments = action.payload;
+
+      state.neighborsGraph = [];
+
+      const fragmentsIds = action.payload.map(({ id }) => id);
+
+      state.grouping = createGrouping(fragmentsIds);
     },
 
     toggleNeighbor: (state, action: PayloadAction<string>) => {

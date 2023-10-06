@@ -5,13 +5,17 @@ import paper from 'paper';
 
 import './style.css';
 import { useSelector } from 'react-redux';
-import { actions } from 'features/level-constructor';
-import { useActions } from 'features/level-constructor/level-constructor-store';
 import {
+  actions,
   selectActiveFragmentNeighborsIds,
   selectActiveFragmentsIds,
+  selectFragments,
   selectHoveredFragmentsIds,
-} from 'features/level-constructor/selectors';
+} from 'features/level-constructor';
+import {
+  Fragment,
+  useActions,
+} from 'features/level-constructor/level-constructor-store';
 
 const CANVAS_ID = 'paper-canvas';
 
@@ -86,19 +90,12 @@ function importFragments(svg: string): paper.PathItem[] {
   return paths as paper.PathItem[];
 }
 
-type FragmentConfig = {
-  id: string;
-  data: string;
-};
-
-function createFragmentsConfig(
-  fragments: paper.PathItem[] | null
-): FragmentConfig[] | null {
+function createFragments(fragments: paper.PathItem[] | null): Fragment[] {
   return (
     fragments?.map((fragment) => ({
       id: fragment.id.toString(),
       data: JSON.parse(fragment.exportJSON({ asString: true }) as string),
-    })) ?? null
+    })) ?? []
   );
 }
 
@@ -122,23 +119,18 @@ function paperForceRedraw(): void {
 
 export function LevelConstructorPage(): JSX.Element {
   const {
-    setHoveredGroupId,
-    setActiveGroupId,
-    toggleActiveGroupId,
-    uniteActiveGroups,
-    breakActiveGroup,
-    setNeighborsGraph,
+    setHoveredFragmentId,
+    setActiveFragmentId,
+    toggleActiveFragmentId,
+    uniteActive,
+    breakActive,
     toggleNeighbor,
-    createGrouping,
+    setFragments,
   } = useActions(actions);
 
   const [fragmentsLayer, setFragmentsLayer] = useState<paper.Layer>();
   const [decorationsLayer, setDecorationsLayer] = useState<paper.Layer>();
   const [group, setGroup] = useState<paper.Layer>();
-
-  const [fragmentsConfig, setFragmentsConfig] = useState<
-    FragmentConfig[] | null
-  >(null);
 
   const [decorationsConfig, setDecorationsConfig] = useState<string | null>(
     null
@@ -147,9 +139,10 @@ export function LevelConstructorPage(): JSX.Element {
   const hoveredFragmentsIds = useSelector(selectHoveredFragmentsIds);
   const activeFragmentsIds = useSelector(selectActiveFragmentsIds);
   const activeFragmentNeighbors = useSelector(selectActiveFragmentNeighborsIds);
+  const fragments = useSelector(selectFragments);
 
   const createFragmentHoverHandler = (hoveredFragmentId: string | null) => () =>
-    setHoveredGroupId(hoveredFragmentId);
+    setHoveredFragmentId(hoveredFragmentId);
 
   const createFragmentClickHandler =
     (clickedFragmentId: string) => (event: any) => {
@@ -160,9 +153,9 @@ export function LevelConstructorPage(): JSX.Element {
       if (isRightButton) {
         toggleNeighbor(clickedFragmentId);
       } else if (isCtrl) {
-        toggleActiveGroupId(clickedFragmentId);
+        toggleActiveFragmentId(clickedFragmentId);
       } else {
-        setActiveGroupId(clickedFragmentId);
+        setActiveFragmentId(clickedFragmentId);
       }
     };
 
@@ -190,7 +183,7 @@ export function LevelConstructorPage(): JSX.Element {
 
     setDecorationsLayer(decLayer);
 
-    paper.project.view.on('mouseleave', () => setHoveredGroupId(null));
+    paper.project.view.on('mouseleave', () => setHoveredFragmentId(null));
 
     return () => paper.project.clear();
   }, []);
@@ -236,7 +229,7 @@ export function LevelConstructorPage(): JSX.Element {
       fragment.onMouseLeave = createFragmentHoverHandler(null);
       fragment.onClick = createFragmentClickHandler(fragmentId);
     });
-  }, [fragmentsLayer, fragmentsConfig]);
+  }, [fragmentsLayer, fragments]);
 
   const handleUploadFragmentsChange = async (
     ev: React.ChangeEvent<HTMLInputElement>
@@ -251,15 +244,11 @@ export function LevelConstructorPage(): JSX.Element {
 
     if (!svgText) return;
 
-    const fragments = importFragments(svgText);
+    const fragmentsPaths = importFragments(svgText);
 
-    setFragmentsConfig(createFragmentsConfig(fragments));
+    setFragments(createFragments(fragmentsPaths));
 
-    fragmentsLayer.addChildren(fragments);
-
-    createGrouping(fragments.map(({ id }) => id.toString()));
-
-    setNeighborsGraph([]);
+    fragmentsLayer.addChildren(fragmentsPaths);
 
     paperForceRedraw();
 
@@ -269,7 +258,7 @@ export function LevelConstructorPage(): JSX.Element {
   const handleUploadFragmentsClick = (
     ev: React.MouseEvent<HTMLInputElement, MouseEvent>
   ) => {
-    if (!fragmentsConfig) return;
+    if (!fragments.length) return;
 
     const isConfirmed = confirm(
       'If you upload new fragment file, current fragments will be deleted. Continue?'
@@ -311,11 +300,11 @@ export function LevelConstructorPage(): JSX.Element {
   };
 
   const handleUnite = (): void => {
-    uniteActiveGroups();
+    uniteActive();
   };
 
   const handleBreak = (): void => {
-    breakActiveGroup();
+    breakActive();
   };
 
   return (
@@ -333,7 +322,7 @@ export function LevelConstructorPage(): JSX.Element {
 
         <div>
           <ul>
-            {fragmentsConfig?.map((fragment) => (
+            {fragments?.map((fragment) => (
               <li
                 key={fragment.id}
                 onMouseEnter={createFragmentHoverHandler(fragment.id)}

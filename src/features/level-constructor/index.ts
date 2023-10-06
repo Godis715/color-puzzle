@@ -1,2 +1,7 @@
 export { reducer, actions } from './level-constructor-store';
-export { selectHoveredGroupId } from './selectors';
+export {
+  selectActiveFragmentNeighborsIds,
+  selectActiveFragmentsIds,
+  selectFragments,
+  selectHoveredFragmentsIds,
+} from './selectors';
