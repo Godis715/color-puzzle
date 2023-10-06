@@ -1,27 +1,17 @@
 /* eslint-disable jsx-a11y/no-noninteractive-element-interactions */
 /* eslint-disable jsx-a11y/click-events-have-key-events */
-import { useCallback, useEffect, useMemo, useReducer, useState } from 'react';
+import { useEffect, useState } from 'react';
 import paper from 'paper';
 
 import './style.css';
-import { useDispatch, useSelector } from 'react-redux';
-import { actions, selectHoveredGroupId } from 'features/level-constructor';
+import { useSelector } from 'react-redux';
+import { actions } from 'features/level-constructor';
+import { useActions } from 'features/level-constructor/level-constructor-store';
 import {
-  UndirectedGraph,
-  getGraphNodeNeighbors,
-  toggleGraphEdge,
-  renameGraphNodeIds,
-  removeGraphNodes,
-} from './undirected-graph';
-import {
-  Grouping,
-  getElementsByGroup,
-  getGroupByElement,
-  createGrouping,
-  generateGroupName,
-  uniteGroups,
-  breakGroup,
-} from './grouping';
+  selectActiveFragmentNeighborsIds,
+  selectActiveFragmentsIds,
+  selectHoveredFragmentsIds,
+} from 'features/level-constructor/selectors';
 
 const CANVAS_ID = 'paper-canvas';
 
@@ -130,22 +120,21 @@ function paperForceRedraw(): void {
   window.dispatchEvent(new Event('resize'));
 }
 
-function toggleArrayElement<T>(array: T[], element: T): T[] {
-  return array.includes(element)
-    ? array.filter((elem) => elem !== element)
-    : array.concat(element);
-}
-
 export function LevelConstructorPage(): JSX.Element {
-  const dispatch = useDispatch();
+  const {
+    setHoveredGroupId,
+    setActiveGroupId,
+    toggleActiveGroupId,
+    uniteActiveGroups,
+    breakActiveGroup,
+    setNeighborsGraph,
+    toggleNeighbor,
+    createGrouping,
+  } = useActions(actions);
 
   const [fragmentsLayer, setFragmentsLayer] = useState<paper.Layer>();
   const [decorationsLayer, setDecorationsLayer] = useState<paper.Layer>();
   const [group, setGroup] = useState<paper.Layer>();
-
-  const [activeGroupsIds, setActiveGroupsId] = useState<string[]>([]);
-  const [grouping, setGrouping] = useState<Grouping>([]);
-  const [neighborsGraph, setNeighborsGraph] = useState<UndirectedGraph>([]);
 
   const [fragmentsConfig, setFragmentsConfig] = useState<
     FragmentConfig[] | null
@@ -155,79 +144,27 @@ export function LevelConstructorPage(): JSX.Element {
     null
   );
 
-  const hoveredGroupId = useSelector(selectHoveredGroupId);
+  const hoveredFragmentsIds = useSelector(selectHoveredFragmentsIds);
+  const activeFragmentsIds = useSelector(selectActiveFragmentsIds);
+  const activeFragmentNeighbors = useSelector(selectActiveFragmentNeighborsIds);
 
-  const hoveredFragments = useMemo(
-    () =>
-      hoveredGroupId ? getElementsByGroup(grouping, [hoveredGroupId]) : [],
-    [hoveredGroupId, grouping]
-  );
+  const createFragmentHoverHandler = (hoveredFragmentId: string | null) => () =>
+    setHoveredGroupId(hoveredFragmentId);
 
-  const activeFragments = useMemo(
-    () => getElementsByGroup(grouping, activeGroupsIds),
-    [activeGroupsIds, grouping]
-  );
-
-  const activeFragmentNeighbors = useMemo(() => {
-    if (activeGroupsIds.length !== 1) return [];
-
-    const neighborGroups = getGraphNodeNeighbors(
-      neighborsGraph,
-      activeGroupsIds
-    );
-
-    return getElementsByGroup(grouping, neighborGroups);
-  }, [neighborsGraph, grouping, activeGroupsIds]);
-
-  const createFragmentHoverHandler = useCallback(
-    (hoveredFragmentId: string | null) => () => {
-      if (!hoveredFragmentId) {
-        dispatch(actions.setHoveredGroupId(null));
-        return;
-      }
-
-      dispatch(
-        actions.setHoveredGroupId(
-          getGroupByElement(grouping, hoveredFragmentId)
-        )
-      );
-    },
-    [grouping]
-  );
-
-  const createFragmentClickHandler = useCallback(
+  const createFragmentClickHandler =
     (clickedFragmentId: string) => (event: any) => {
-      const clickedGroupId = getGroupByElement(grouping, clickedFragmentId);
-
-      if (!clickedGroupId) return;
-
       const isRightButton = event?.event?.button === 2;
 
-      if (isRightButton && activeGroupsIds.length === 1) {
-        const activeGroupId = activeGroupsIds[0];
+      const isCtrl = event?.ctrlKey ?? event?.modifiers?.control ?? false;
 
-        setNeighborsGraph(
-          toggleGraphEdge(neighborsGraph, [clickedGroupId, activeGroupId])
-        );
+      if (isRightButton) {
+        toggleNeighbor(clickedFragmentId);
+      } else if (isCtrl) {
+        toggleActiveGroupId(clickedFragmentId);
       } else {
-        const isCtrl = event?.ctrlKey ?? event?.modifiers?.control ?? false;
-
-        if (isCtrl) {
-          setActiveGroupsId(
-            toggleArrayElement(activeGroupsIds, clickedGroupId)
-          );
-        } else if (
-          activeGroupsIds.length > 1 ||
-          activeGroupsIds[0] !== clickedGroupId
-        ) {
-          setActiveGroupsId([clickedGroupId]);
-        } else {
-          setActiveGroupsId([]);
-        }
+        setActiveGroupId(clickedFragmentId);
       }
-    },
-    [activeGroupsIds, grouping, neighborsGraph]
-  );
+    };
 
   const fitView = (): void => {
     if (group) {
@@ -253,9 +190,7 @@ export function LevelConstructorPage(): JSX.Element {
 
     setDecorationsLayer(decLayer);
 
-    paper.project.view.on('mouseleave', () =>
-      dispatch(actions.setHoveredGroupId(null))
-    );
+    paper.project.view.on('mouseleave', () => setHoveredGroupId(null));
 
     return () => paper.project.clear();
   }, []);
@@ -272,11 +207,11 @@ export function LevelConstructorPage(): JSX.Element {
       const fragmentId = fragment.id.toString();
 
       const getColor = () => {
-        const color = activeFragments.includes(fragmentId)
+        const color = activeFragmentsIds.includes(fragmentId)
           ? new paper.Color(FRAG_SELECTED_COLOR)
           : new paper.Color(FRAG_DEFAULT_COLOR);
 
-        if (hoveredFragments.includes(fragmentId)) {
+        if (hoveredFragmentsIds.includes(fragmentId)) {
           color.red -= 0.1;
           color.green -= 0.1;
           color.blue -= 0.1;
@@ -292,22 +227,16 @@ export function LevelConstructorPage(): JSX.Element {
 
       fragment.tweenTo({ fillColor: getColor() }, 80);
     });
-  }, [hoveredFragments, activeFragments, activeFragmentNeighbors]);
+  }, [hoveredFragmentsIds, activeFragmentsIds, activeFragmentNeighbors]);
 
   useEffect(() => {
     fragmentsLayer?.children.forEach((fragment) => {
       const fragmentId = fragment.id.toString();
       fragment.onMouseEnter = createFragmentHoverHandler(fragmentId);
       fragment.onMouseLeave = createFragmentHoverHandler(null);
-    });
-  }, [fragmentsLayer, createFragmentHoverHandler]);
-
-  useEffect(() => {
-    fragmentsLayer?.children.forEach((fragment) => {
-      const fragmentId = fragment.id.toString();
       fragment.onClick = createFragmentClickHandler(fragmentId);
     });
-  }, [fragmentsLayer, createFragmentClickHandler]);
+  }, [fragmentsLayer, fragmentsConfig]);
 
   const handleUploadFragmentsChange = async (
     ev: React.ChangeEvent<HTMLInputElement>
@@ -328,7 +257,7 @@ export function LevelConstructorPage(): JSX.Element {
 
     fragmentsLayer.addChildren(fragments);
 
-    setGrouping(createGrouping(fragments.map(({ id }) => id.toString())));
+    createGrouping(fragments.map(({ id }) => id.toString()));
 
     setNeighborsGraph([]);
 
@@ -382,25 +311,11 @@ export function LevelConstructorPage(): JSX.Element {
   };
 
   const handleUnite = (): void => {
-    if (activeGroupsIds.length < 2) return;
-
-    const newGroupId = generateGroupName();
-
-    setGrouping(uniteGroups(grouping, activeGroupsIds, newGroupId));
-
-    setActiveGroupsId([newGroupId]);
-
-    setNeighborsGraph(
-      renameGraphNodeIds(neighborsGraph, activeGroupsIds, newGroupId)
-    );
+    uniteActiveGroups();
   };
 
   const handleBreak = (): void => {
-    if (activeGroupsIds.length !== 1) return;
-
-    setGrouping(breakGroup(grouping, activeGroupsIds[0]));
-
-    setNeighborsGraph(removeGraphNodes(neighborsGraph, activeGroupsIds));
+    breakActiveGroup();
   };
 
   return (
@@ -425,7 +340,7 @@ export function LevelConstructorPage(): JSX.Element {
                 onMouseLeave={createFragmentHoverHandler(null)}
                 onClick={createFragmentClickHandler(fragment.id)}
                 className={
-                  hoveredFragments.includes(fragment.id) ? 'active' : ''
+                  hoveredFragmentsIds.includes(fragment.id) ? 'active' : ''
                 }
               >
                 {fragment.id}
