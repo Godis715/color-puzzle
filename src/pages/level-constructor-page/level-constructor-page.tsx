@@ -4,6 +4,8 @@ import { useCallback, useEffect, useMemo, useReducer, useState } from 'react';
 import paper from 'paper';
 
 import './style.css';
+import { useDispatch, useSelector } from 'react-redux';
+import { actions, selectHoveredGroupId } from 'features/level-constructor';
 import {
   UndirectedGraph,
   getGraphNodeNeighbors,
@@ -135,11 +137,12 @@ function toggleArrayElement<T>(array: T[], element: T): T[] {
 }
 
 export function LevelConstructorPage(): JSX.Element {
+  const dispatch = useDispatch();
+
   const [fragmentsLayer, setFragmentsLayer] = useState<paper.Layer>();
   const [decorationsLayer, setDecorationsLayer] = useState<paper.Layer>();
   const [group, setGroup] = useState<paper.Layer>();
 
-  const [hoveredGroupId, setHoveredGroupId] = useState<string | null>(null);
   const [activeGroupsIds, setActiveGroupsId] = useState<string[]>([]);
   const [grouping, setGrouping] = useState<Grouping>([]);
   const [neighborsGraph, setNeighborsGraph] = useState<UndirectedGraph>([]);
@@ -151,6 +154,8 @@ export function LevelConstructorPage(): JSX.Element {
   const [decorationsConfig, setDecorationsConfig] = useState<string | null>(
     null
   );
+
+  const hoveredGroupId = useSelector(selectHoveredGroupId);
 
   const hoveredFragments = useMemo(
     () =>
@@ -177,11 +182,15 @@ export function LevelConstructorPage(): JSX.Element {
   const createFragmentHoverHandler = useCallback(
     (hoveredFragmentId: string | null) => () => {
       if (!hoveredFragmentId) {
-        setHoveredGroupId(null);
+        dispatch(actions.setHoveredGroupId(null));
         return;
       }
 
-      setHoveredGroupId(getGroupByElement(grouping, hoveredFragmentId));
+      dispatch(
+        actions.setHoveredGroupId(
+          getGroupByElement(grouping, hoveredFragmentId)
+        )
+      );
     },
     [grouping]
   );
@@ -244,7 +253,9 @@ export function LevelConstructorPage(): JSX.Element {
 
     setDecorationsLayer(decLayer);
 
-    paper.project.view.on('mouseleave', () => setHoveredGroupId(null));
+    paper.project.view.on('mouseleave', () =>
+      dispatch(actions.setHoveredGroupId(null))
+    );
 
     return () => paper.project.clear();
   }, []);
