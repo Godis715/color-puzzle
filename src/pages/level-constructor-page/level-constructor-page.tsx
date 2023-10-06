@@ -83,7 +83,7 @@ function importFragments(svg: string): paper.PathItem[] {
 }
 
 type FragmentConfig = {
-  id: string | number;
+  id: string;
   data: string;
 };
 
@@ -92,13 +92,11 @@ function createFragmentsConfig(
 ): FragmentConfig[] | null {
   return (
     fragments?.map((fragment) => ({
-      id: fragment.id,
+      id: fragment.id.toString(),
       data: JSON.parse(fragment.exportJSON({ asString: true }) as string),
     })) ?? null
   );
 }
-
-type Id = string | number;
 
 function paperForceRedraw(): void {
   const canvas = document.getElementById(CANVAS_ID);
@@ -118,15 +116,109 @@ function paperForceRedraw(): void {
   window.dispatchEvent(new Event('resize'));
 }
 
+type UndirectedGraph = [string, string][];
+
+type Grouping = [string, string][];
+
+function removeIds(graph: UndirectedGraph, ids: string[]): UndirectedGraph {
+  return graph.filter(([id1, id2]) => !ids.includes(id1) && !ids.includes(id2));
+}
+
+function renameGraphNodeIds(
+  graph: UndirectedGraph,
+  ids: string[],
+  newId: string
+): UndirectedGraph {
+  return graph
+    .map(([id1, id2]) => {
+      let newId1 = id1;
+      let newId2 = id2;
+      if (ids.includes(id1)) newId1 = newId;
+      if (ids.includes(id2)) newId2 = newId;
+      return [newId1, newId2] as [string, string];
+    })
+    .filter(([id1, id2]) => id1 !== id2);
+}
+
+function toggleGraphEdge(
+  graph: UndirectedGraph,
+  edge: [string, string]
+): UndirectedGraph {
+  if (edge[0] === edge[1]) return graph;
+
+  const edgeIndex = graph.findIndex(([id1, id2]) => {
+    if (
+      (edge[0] === id1 && edge[1] === id2) ||
+      (edge[1] === id1 && edge[0] === id2)
+    )
+      return true;
+
+    return false;
+  });
+
+  if (edgeIndex === -1) {
+    return [...graph, edge];
+  }
+
+  return graph.filter((_, i) => edgeIndex !== i);
+}
+
+function getGraphNodeNeighbors(
+  graph: UndirectedGraph,
+  ids: string[]
+): string[] {
+  return graph.reduce((acc, [id1, id2]) => {
+    if (ids.includes(id1)) acc.push(id2);
+    if (ids.includes(id2)) acc.push(id1);
+    return acc;
+  }, [] as string[]);
+}
+
+function generateGroupName() {
+  return Math.random().toString();
+}
+
+function uniteGroups(
+  grouping: Grouping,
+  groups: string[],
+  newGroupName: string
+): [string, string][] {
+  return grouping.map(([id, group]) =>
+    groups.includes(group) ? [id, newGroupName] : [id, group]
+  );
+}
+
+function breakGroup(grouping: Grouping, group: string): [string, string][] {
+  return grouping.map(([id, g]) => (g === group ? [id, id] : [id, g]));
+}
+
+function getElementsByGroup(grouping: Grouping, groups: string[]): string[] {
+  return grouping
+    .filter(([, group]) => groups.includes(group))
+    .map(([id]) => id);
+}
+
+function getGroupByElement(grouping: Grouping, id: string): string | null {
+  return grouping.find(([elemId]) => elemId === id)?.[1] ?? null;
+}
+
+function createGrouping(ids: string[]): Grouping {
+  return ids.map((id) => [id, id]);
+}
+
 export function LevelConstructorPage(): JSX.Element {
   const [fragmentsLayer, setFragmentsLayer] = useState<paper.Layer>();
   const [decorationsLayer, setDecorationsLayer] = useState<paper.Layer>();
   const [group, setGroup] = useState<paper.Layer>();
 
-  const [hoveredGroupId, setHoveredGroupId] = useState<Id | null>(null);
-  const [activeGroupsId, setActiveGroupsId] = useState<Id[]>([]);
-  const [groups, setGroups] = useState<Record<Id, Id> | null>(null);
-  const [neighbors, setNeighbors] = useState<Record<Id, Id[]> | null>(null);
+  const [hoveredGroupId, setHoveredGroupId] = useState<string | null>(null);
+  const [activeGroupsId, setActiveGroupsId] = useState<string[]>([]);
+  const [grouping, setGrouping] = useState<Grouping | null>(null);
+  const [neighborsGraph, setNeighborsGraph] = useState<UndirectedGraph | null>(
+    null
+  );
+
+  console.log(grouping);
 
   const [fragmentsConfig, setFragmentsConfig] = useState<
     FragmentConfig[] | null
@@ -137,88 +229,78 @@ export function LevelConstructorPage(): JSX.Element {
   );
 
   const getIsFragmentHovered = useMemo(() => {
-    if (!groups) return () => false;
+    if (!grouping || !hoveredGroupId) return () => false;
 
-    const hoveredFragments = Object.entries(groups)
-      .filter(([, groupId]) => groupId === hoveredGroupId)
-      .map(([fragId]) => fragId);
+    const hoveredFragments = getElementsByGroup(grouping, [hoveredGroupId]);
 
-    return (id: Id) => hoveredFragments.includes(id.toString());
-  }, [hoveredGroupId, groups]);
+    return (id: string) => hoveredFragments.includes(id.toString());
+  }, [hoveredGroupId, grouping]);
 
   const getIsFragmentActive = useMemo(() => {
-    if (!groups) return () => false;
+    if (!grouping) return () => false;
 
-    const activeFragments = Object.entries(groups)
-      .filter(([, groupId]) => activeGroupsId.includes(groupId))
-      .map(([fragId]) => fragId);
+    const activeFragments = getElementsByGroup(grouping, activeGroupsId);
 
-    return (id: Id) => activeFragments.includes(id.toString());
-  }, [activeGroupsId, groups]);
+    return (id: string) => activeFragments.includes(id.toString());
+  }, [activeGroupsId, grouping]);
 
   const getIsFragmentNeighbor = useMemo(() => {
-    if (!neighbors || !groups || activeGroupsId.length !== 1)
+    if (!neighborsGraph || !grouping || activeGroupsId.length !== 1)
       return () => false;
 
     const activeGroupId = activeGroupsId[0];
 
-    const neighborFragments = Object.entries(groups)
-      .filter(([, groupId]) => neighbors[activeGroupId].includes(groupId))
-      .map(([fragId]) => fragId);
+    const neighbors = getGraphNodeNeighbors(neighborsGraph, [activeGroupId]);
 
-    return (id: Id) => neighborFragments?.includes(id.toString()) ?? false;
-  }, [neighbors, groups, activeGroupsId]);
+    const neighborFragments = getElementsByGroup(grouping, neighbors);
+
+    return (id: string) => neighborFragments?.includes(id.toString()) ?? false;
+  }, [neighborsGraph, grouping, activeGroupsId]);
 
   const createFragmentHoverHandler = useCallback(
-    (id: Id | null) => () => {
+    (id: string | null) => () => {
       if (!id) {
         setHoveredGroupId(null);
         return;
       }
 
-      if (!groups) return;
+      if (!grouping) return;
 
-      const groupId = groups[id];
+      const groupId = getGroupByElement(grouping, id);
 
       setHoveredGroupId(groupId);
     },
-    [groups]
+    [grouping]
   );
 
   const createFragmentClickHandler = useCallback(
-    (id: Id | null) => (event: any) => {
+    (fid: string | null) => (event: any) => {
       if (event?.event?.button === 2 && activeGroupsId.length === 1) {
-        if (!neighbors || !id) return;
+        if (!neighborsGraph || !fid || !grouping) return;
 
-        const groupId = activeGroupsId[0];
+        const activeGroupId = activeGroupsId[0];
 
-        const activeNeighbors = neighbors[groupId];
+        const groupId = getGroupByElement(grouping, fid);
 
-        if (activeNeighbors.includes(id)) {
-          setNeighbors({
-            ...neighbors,
-            [groupId]: activeNeighbors.filter((nid) => nid !== id),
-            [id]: neighbors[id].filter((nid) => nid !== groupId),
-          });
-        } else {
-          setNeighbors({
-            ...neighbors,
-            [groupId]: [...activeNeighbors, id],
-            [id]: [...neighbors[id], groupId],
-          });
-        }
+        if (!groupId) return;
+
+        setNeighborsGraph(
+          toggleGraphEdge(neighborsGraph, [groupId, activeGroupId])
+        );
 
         return;
       }
 
-      if (!id) {
+      if (!fid) {
         setActiveGroupsId([]);
         return;
       }
 
-      if (!groups) return;
+      if (!grouping) return;
 
-      const groupId = groups[id];
+      const groupId = getGroupByElement(grouping, fid);
+
+      if (!groupId) return;
 
       const isCtrl = event?.ctrlKey ?? event?.modifiers?.control ?? false;
 
@@ -237,7 +319,7 @@ export function LevelConstructorPage(): JSX.Element {
         setActiveGroupsId([...activeGroupsId, groupId]);
       }
     },
-    [activeGroupsId, groups, neighbors]
+    [activeGroupsId, grouping, neighborsGraph]
   );
 
   const fitView = (): void => {
@@ -278,18 +360,20 @@ export function LevelConstructorPage(): JSX.Element {
     if (!fragmentsLayer) return;
 
     fragmentsLayer.children.forEach((fragment) => {
+      const fragmentId = fragment.id.toString();
+
       const getColor = () => {
-        const color = getIsFragmentActive(fragment.id)
+        const color = getIsFragmentActive(fragmentId)
           ? new paper.Color(FRAG_SELECTED_COLOR)
           : new paper.Color(FRAG_DEFAULT_COLOR);
 
-        if (getIsFragmentHovered(fragment.id)) {
+        if (getIsFragmentHovered(fragmentId)) {
           color.red -= 0.1;
           color.green -= 0.1;
           color.blue -= 0.1;
         }
 
-        if (getIsFragmentNeighbor(fragment.id)) {
+        if (getIsFragmentNeighbor(fragmentId)) {
           color.red -= 0.2;
           color.blue -= 0.2;
         }
@@ -303,14 +387,16 @@ export function LevelConstructorPage(): JSX.Element {
 
   useEffect(() => {
     fragmentsLayer?.children.forEach((fragment) => {
-      fragment.onMouseEnter = createFragmentHoverHandler(fragment.id);
+      const fragmentId = fragment.id.toString();
+      fragment.onMouseEnter = createFragmentHoverHandler(fragmentId);
       fragment.onMouseLeave = createFragmentHoverHandler(null);
     });
   }, [fragmentsLayer, createFragmentHoverHandler]);
 
   useEffect(() => {
     fragmentsLayer?.children.forEach((fragment) => {
-      fragment.onClick = createFragmentClickHandler(fragment.id);
+      const fragmentId = fragment.id.toString();
+      fragment.onClick = createFragmentClickHandler(fragmentId);
     });
   }, [fragmentsLayer, createFragmentClickHandler]);
 
@@ -333,25 +419,9 @@ export function LevelConstructorPage(): JSX.Element {
 
     fragmentsLayer.addChildren(fragments);
 
-    setGroups(
-      fragments.reduce(
-        (acc, fragment) => {
-          acc[fragment.id] = fragment.id;
-          return acc;
-        },
-        {} as Record<Id, Id>
-      )
-    );
+    setGrouping(createGrouping(fragments.map(({ id }) => id.toString())));
 
-    setNeighbors(
-      fragments.reduce(
-        (acc, fragment) => {
-          acc[fragment.id] = [];
-          return acc;
-        },
-        {} as Record<Id, Id[]>
-      )
-    );
+    setNeighborsGraph([]);
 
     paperForceRedraw();
 
@@ -403,17 +473,27 @@ export function LevelConstructorPage(): JSX.Element {
   };
 
   const handleUnite = (): void => {
-    if (!groups || activeGroupsId.length < 2) return;
+    if (!grouping || activeGroupsId.length < 2) return;
 
-    const newGroups = Object.fromEntries(
-      Object.entries(groups).map(([fragId, groupId]) => {
-        if (!activeGroupsId.includes(groupId)) return [fragId, groupId];
+    const newGroupId = generateGroupName();
 
-        return [fragId, activeGroupsId[0]];
-      })
+    setGrouping(uniteGroups(grouping, activeGroupsId, newGroupId));
+
+    setActiveGroupsId([newGroupId]);
+
+    if (!neighborsGraph) return;
+
+    setNeighborsGraph(
+      renameGraphNodeIds(neighborsGraph, activeGroupsId, newGroupId)
     );
+  };
 
-    setGroups(newGroups);
+  const handleBreak = (): void => {
+    if (!grouping || activeGroupsId.length !== 1 || !neighborsGraph) return;
+
+    setGrouping(breakGroup(grouping, activeGroupsId[0]));
+
+    setNeighborsGraph(removeIds(neighborsGraph, activeGroupsId));
   };
 
   return (
@@ -477,6 +557,12 @@ export function LevelConstructorPage(): JSX.Element {
         <div>
           <button type="button" onClick={handleUnite}>
             Unite
+          </button>
+        </div>
+
+        <div>
+          <button type="button" onClick={handleBreak}>
+            Break
           </button>
         </div>
 
