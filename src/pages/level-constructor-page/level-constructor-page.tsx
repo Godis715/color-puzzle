@@ -4,16 +4,28 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import paper from 'paper';
 
 import './style.css';
+import {
+  UndirectedGraph,
+  getGraphNodeNeighbors,
+  toggleGraphEdge,
+  renameGraphNodeIds,
+  removeGraphNodes,
+} from './undirected-graph';
+import {
+  Grouping,
+  getElementsByGroup,
+  getGroupByElement,
+  createGrouping,
+  generateGroupName,
+  uniteGroups,
+  breakGroup,
+} from './grouping';
 
 const CANVAS_ID = 'paper-canvas';
 
 const FRAG_DEFAULT_COLOR = new paper.Color('lightgray');
 
-const FRAG_HOVER_COLOR = new paper.Color('red');
-
 const FRAG_SELECTED_COLOR = new paper.Color('blue');
-
-const ADJ_FRAG_SELECTED_COLOR = new paper.Color('lightblue');
 
 function getFileContentAsText(file: File): Promise<string> {
   const reader = new FileReader();
@@ -116,96 +128,6 @@ function paperForceRedraw(): void {
   window.dispatchEvent(new Event('resize'));
 }
 
-type UndirectedGraph = [string, string][];
-
-type Grouping = [string, string][];
-
-function removeIds(graph: UndirectedGraph, ids: string[]): UndirectedGraph {
-  return graph.filter(([id1, id2]) => !ids.includes(id1) && !ids.includes(id2));
-}
-
-function renameGraphNodeIds(
-  graph: UndirectedGraph,
-  ids: string[],
-  newId: string
-): UndirectedGraph {
-  return graph
-    .map(([id1, id2]) => {
-      let newId1 = id1;
-      let newId2 = id2;
-      if (ids.includes(id1)) newId1 = newId;
-      if (ids.includes(id2)) newId2 = newId;
-      return [newId1, newId2] as [string, string];
-    })
-    .filter(([id1, id2]) => id1 !== id2);
-}
-
-function toggleGraphEdge(
-  graph: UndirectedGraph,
-  edge: [string, string]
-): UndirectedGraph {
-  if (edge[0] === edge[1]) return graph;
-
-  const edgeIndex = graph.findIndex(([id1, id2]) => {
-    if (
-      (edge[0] === id1 && edge[1] === id2) ||
-      (edge[1] === id1 && edge[0] === id2)
-    )
-      return true;
-
-    return false;
-  });
-
-  if (edgeIndex === -1) {
-    return [...graph, edge];
-  }
-
-  return graph.filter((_, i) => edgeIndex !== i);
-}
-
-function getGraphNodeNeighbors(
-  graph: UndirectedGraph,
-  ids: string[]
-): string[] {
-  return graph.reduce((acc, [id1, id2]) => {
-    if (ids.includes(id1)) acc.push(id2);
-    if (ids.includes(id2)) acc.push(id1);
-    return acc;
-  }, [] as string[]);
-}
-
-function generateGroupName() {
-  return Math.random().toString();
-}
-
-function uniteGroups(
-  grouping: Grouping,
-  groups: string[],
-  newGroupName: string
-): [string, string][] {
-  return grouping.map(([id, group]) =>
-    groups.includes(group) ? [id, newGroupName] : [id, group]
-  );
-}
-
-function breakGroup(grouping: Grouping, group: string): [string, string][] {
-  return grouping.map(([id, g]) => (g === group ? [id, id] : [id, g]));
-}
-
-function getElementsByGroup(grouping: Grouping, groups: string[]): string[] {
-  return grouping
-    .filter(([, group]) => groups.includes(group))
-    .map(([id]) => id);
-}
-
-function getGroupByElement(grouping: Grouping, id: string): string | null {
-  return grouping.find(([elemId]) => elemId === id)?.[1] ?? null;
-}
-
-function createGrouping(ids: string[]): Grouping {
-  return ids.map((id) => [id, id]);
-}
-
 export function LevelConstructorPage(): JSX.Element {
   const [fragmentsLayer, setFragmentsLayer] = useState<paper.Layer>();
   const [decorationsLayer, setDecorationsLayer] = useState<paper.Layer>();
@@ -217,8 +139,6 @@ export function LevelConstructorPage(): JSX.Element {
   const [neighborsGraph, setNeighborsGraph] = useState<UndirectedGraph | null>(
     null
   );
-
-  console.log(grouping);
 
   const [fragmentsConfig, setFragmentsConfig] = useState<
     FragmentConfig[] | null
@@ -244,7 +164,7 @@ export function LevelConstructorPage(): JSX.Element {
     return (id: string) => activeFragments.includes(id.toString());
   }, [activeGroupsId, grouping]);
 
-  const getIsFragmentNeighbor = useMemo(() => {
+  const getIsActiveFragmentNeighbor = useMemo(() => {
     if (!neighborsGraph || !grouping || activeGroupsId.length !== 1)
       return () => false;
 
@@ -373,7 +293,7 @@ export function LevelConstructorPage(): JSX.Element {
           color.blue -= 0.1;
         }
 
-        if (getIsFragmentNeighbor(fragmentId)) {
+        if (getIsActiveFragmentNeighbor(fragmentId)) {
           color.red -= 0.2;
           color.blue -= 0.2;
         }
@@ -383,7 +303,7 @@ export function LevelConstructorPage(): JSX.Element {
 
       fragment.tweenTo({ fillColor: getColor() }, 80);
     });
-  }, [getIsFragmentHovered, getIsFragmentActive, getIsFragmentNeighbor]);
+  }, [getIsFragmentHovered, getIsFragmentActive, getIsActiveFragmentNeighbor]);
 
   useEffect(() => {
     fragmentsLayer?.children.forEach((fragment) => {
@@ -493,7 +413,7 @@ export function LevelConstructorPage(): JSX.Element {
 
     setGrouping(breakGroup(grouping, activeGroupsId[0]));
 
-    setNeighborsGraph(removeIds(neighborsGraph, activeGroupsId));
+    setNeighborsGraph(removeGraphNodes(neighborsGraph, activeGroupsId));
   };
 
   return (
@@ -502,7 +422,11 @@ export function LevelConstructorPage(): JSX.Element {
 
       <div className="workspace">
         <div className="canvas-container">
-          <canvas data-paper-resize="true" id={CANVAS_ID} />
+          <canvas
+            data-paper-resize="true"
+            id={CANVAS_ID}
+            onContextMenu={(ev) => ev.preventDefault()}
+          />
         </div>
 
         <div>
