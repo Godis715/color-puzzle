@@ -1,9 +1,10 @@
 /* eslint-disable jsx-a11y/no-noninteractive-element-interactions */
 /* eslint-disable jsx-a11y/click-events-have-key-events */
 import { useCallback, useEffect, useState } from 'react';
+import { cn } from '@bem-react/classname';
 import paper from 'paper';
 
-import './style.css';
+import './style.scss';
 import { useSelector } from 'react-redux';
 import {
   Fragment,
@@ -15,6 +16,8 @@ import {
   selectDecorations,
   selectGroups,
   selectFragmentIdToGroupIdMapping,
+  selectIsActiveGroupReady,
+  selectIsSingleSelection,
 } from 'features/level-constructor';
 import { useActions } from 'shared/hooks';
 
@@ -166,6 +169,8 @@ function gerFragmentColor({
   return color;
 }
 
+const cnGroupList = cn('GroupList');
+
 export function LevelConstructorPage(): JSX.Element {
   const {
     setActiveGroupId,
@@ -176,6 +181,7 @@ export function LevelConstructorPage(): JSX.Element {
     setFragments,
     setDecorations,
     setHoveredGroupId,
+    toggleIsActiveGroupReady,
   } = useActions(actions);
 
   const [fragmentsLayer, setFragmentsLayer] = useState<paper.Layer>();
@@ -189,6 +195,8 @@ export function LevelConstructorPage(): JSX.Element {
   const decorations = useSelector(selectDecorations);
   const groups = useSelector(selectGroups);
   const mapFragmentIdToGroupId = useSelector(selectFragmentIdToGroupIdMapping);
+  const isActiveGroupReady = useSelector(selectIsActiveGroupReady);
+  const isSingleSelection = useSelector(selectIsSingleSelection);
 
   const createGroupHoverHandler = (hoveredGroupId: string | null) => () =>
     setHoveredGroupId(hoveredGroupId);
@@ -370,20 +378,30 @@ export function LevelConstructorPage(): JSX.Element {
         </div>
 
         <div>
-          <ul>
+          <ul className={cnGroupList()}>
             {groups.map((group) => (
               <li
                 key={group.id}
                 onMouseEnter={createGroupHoverHandler(group.id)}
                 onMouseLeave={createGroupHoverHandler(null)}
                 onClick={createGroupClickHandler(group.id)}
-                className={group.isActive ? 'active' : ''}
+                className={cnGroupList('Item', {
+                  isActive: group.isActive,
+                  isHovered: group.isHovered,
+                  isReady: group.isReady,
+                })}
               >
                 {group.id} ({group.neighbors.length})
                 {group.fragmentIds.length > 1 && ' (multi)'}
               </li>
             ))}
           </ul>
+
+          {isSingleSelection && (
+            <button onClick={() => toggleIsActiveGroupReady()}>
+              {isActiveGroupReady ? 'Mark as NOT ready' : 'Mark as ready'}
+            </button>
+          )}
         </div>
       </div>
 

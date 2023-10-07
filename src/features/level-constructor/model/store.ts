@@ -8,7 +8,6 @@ import {
   breakGroup,
   createGrouping,
   generateGroupName,
-  getGroupByElement,
   Grouping,
   uniteGroups,
 } from '../lib/grouping';
@@ -36,6 +35,7 @@ export type LevelConstructorState = {
   neighborsGraph: UndirectedGraph;
   fragments: Fragment[];
   decorations: Decorations;
+  readyGroups: string[];
 };
 
 const initialState: LevelConstructorState = {
@@ -45,6 +45,7 @@ const initialState: LevelConstructorState = {
   neighborsGraph: [],
   fragments: [],
   decorations: null,
+  readyGroups: [],
 };
 
 export const levelConstructorSlice = createSlice({
@@ -137,10 +138,28 @@ export const levelConstructorSlice = createSlice({
       const edge: [string, string] = [groupId, activeGroupId];
 
       state.neighborsGraph = toggleGraphEdge(neighborsGraph, edge);
+
+      state.readyGroups = state.readyGroups.filter(
+        (id) => id !== groupId && id !== activeGroupId
+      );
     },
 
     setDecorations: (state, action: PayloadAction<Decorations>) => {
       state.decorations = action.payload;
+    },
+
+    toggleIsActiveGroupReady: (state) => {
+      console.log('!!!');
+
+      const { activeGroupsIds, readyGroups } = state;
+
+      const isSingleSelect = activeGroupsIds.length === 1;
+
+      if (!isSingleSelect) return;
+
+      const groupId = activeGroupsIds[0];
+
+      state.readyGroups = toggleArrayElement(readyGroups, groupId);
     },
   },
 });
@@ -150,6 +169,7 @@ const persistWhiteList: (keyof LevelConstructorState)[] = [
   'neighborsGraph',
   'fragments',
   'decorations',
+  'readyGroups',
 ];
 
 export const reducer = persistReducer(

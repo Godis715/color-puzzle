@@ -70,12 +70,32 @@ export const selectDecorations = createSelector(
   (state) => state.decorations
 );
 
+export const selectReadyGroups = createSelector(
+  selectLevelConstructorState,
+  (state) => state.readyGroups
+);
+
+export const selectIsActiveGroupReady = createSelector(
+  selectActiveGroupsIds,
+  selectReadyGroups,
+  (activeGroupsIds, readyGroups) => {
+    const isSingleSelect = activeGroupsIds.length === 1;
+
+    if (!isSingleSelect) return false;
+
+    const groupId = activeGroupsIds[0];
+
+    return readyGroups.includes(groupId);
+  }
+);
+
 export const selectGroups = createSelector(
   selectGrouping,
   selectActiveGroupsIds,
   selectHoveredGroupId,
   selectNeighborsGraph,
-  (grouping, activeGroupsIds, hoveredGroupId, neighborsGraph) => {
+  selectReadyGroups,
+  (grouping, activeGroupsIds, hoveredGroupId, neighborsGraph, readyGroups) => {
     const mapGroupIdToFragmentsIds = grouping.reduce(
       (acc, [fragmentId, groupId]) => {
         acc[groupId] ??= [];
@@ -94,6 +114,7 @@ export const selectGroups = createSelector(
         isActive: activeGroupsIds.includes(groupId),
         isHovered: hoveredGroupId === groupId,
         neighbors: mapGroupIdToNeighborsIds[groupId] ?? [],
+        isReady: readyGroups.includes(groupId),
       })
     );
   }
@@ -102,4 +123,9 @@ export const selectGroups = createSelector(
 export const selectFragmentIdToGroupIdMapping = createSelector(
   selectGrouping,
   (grouping) => Object.fromEntries(grouping)
+);
+
+export const selectIsSingleSelection = createSelector(
+  selectActiveGroupsIds,
+  (activeGroupsIds) => activeGroupsIds.length === 1
 );

@@ -1,0 +1,50 @@
+canvas[data-paper-resize="true"] {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.canvas-container {
+  max-width: 400px;
+  width: 100%;
+  height: 400px;
+  padding: 16px;
+  border: 1px solid gray;
+}
+
+.GroupList {
+  &-Item {
+    cursor: pointer;
+
+    &::after {
+      display: inline-block;
+      content: '';
+      width: 8px;
+      height: 8px;
+      margin-left: 4px;
+      background-color: red;
+      border-radius: 50%;
+    }
+
+    &_isReady::after {
+      background-color: green;
+    }
+
+    &_isHovered {
+      background-color: lightgray;
+    }
+
+    &_isActive {
+      background-color: gray;
+    }
+  }
+}
+
+li.active {
+  background-color: lightgray;
+}
+
+.workspace {
+  display: flex;
+  flex-direction: row;
+}
