@@ -6,16 +6,14 @@ import paper from 'paper';
 import './style.css';
 import { useSelector } from 'react-redux';
 import {
+  Fragment,
   actions,
   selectActiveFragmentNeighborsIds,
   selectActiveFragmentsIds,
   selectFragments,
   selectHoveredFragmentsIds,
 } from 'features/level-constructor';
-import {
-  Fragment,
-  useActions,
-} from 'features/level-constructor/level-constructor-store';
+import { useActions } from 'shared/hooks';
 
 const CANVAS_ID = 'paper-canvas';
 

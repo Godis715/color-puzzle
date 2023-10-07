@@ -1,7 +1,11 @@
-export { reducer, actions, modelName } from './level-constructor-store';
 export {
+  reducer,
+  actions,
+  modelName,
   selectActiveFragmentNeighborsIds,
   selectActiveFragmentsIds,
   selectFragments,
   selectHoveredFragmentsIds,
-} from './selectors';
+} from './model';
+
+export type { Fragment } from './model';

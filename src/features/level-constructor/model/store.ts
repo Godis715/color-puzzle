@@ -1,8 +1,6 @@
 /* eslint-disable no-param-reassign */
 import { createSlice } from '@reduxjs/toolkit';
 import type { PayloadAction } from '@reduxjs/toolkit';
-import { useDispatch } from 'react-redux';
-import { useMemo } from 'react';
 import { persistReducer } from 'redux-persist';
 import storage from 'redux-persist/lib/storage';
 
@@ -13,13 +11,13 @@ import {
   getGroupByElement,
   Grouping,
   uniteGroups,
-} from './grouping';
+} from '../lib/grouping';
 import {
   removeGraphNodes,
   renameGraphNodeIds,
   toggleGraphEdge,
   UndirectedGraph,
-} from './undirected-graph';
+} from '../lib/undirected-graph';
 
 export const modelName = 'levelConstructor';
 
@@ -164,22 +162,6 @@ export const levelConstructorSlice = createSlice({
     },
   },
 });
-
-type Actions = Record<string, (...args: any[]) => any>;
-
-export function useActions<T extends Actions>(actions: T): T {
-  const dispatch = useDispatch();
-
-  return useMemo(
-    () =>
-      Object.entries(actions).reduce((acc, [key, action]) => {
-        const newAction = (...args: any[]) => dispatch(action(...args));
-        acc[key as keyof T] = newAction as any;
-        return acc;
-      }, {} as T),
-    [dispatch]
-  );
-}
 
 const persistWhiteList: (keyof LevelConstructorState)[] = [
   'grouping',

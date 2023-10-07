@@ -1,8 +1,8 @@
 import { createSelector } from 'reselect';
 
-import { getElementsByGroup } from './grouping';
-import { getGraphNodeNeighbors } from './undirected-graph';
-import { LevelConstructorState, modelName } from './level-constructor-store';
+import { getElementsByGroup } from '../lib/grouping';
+import { getGraphNodeNeighbors } from '../lib/undirected-graph';
+import { LevelConstructorState, modelName } from './store';
 
 export const selectLevelConstructorState = (state: Record<string, unknown>) =>
   state[modelName] as LevelConstructorState;
