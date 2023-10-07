@@ -18,6 +18,7 @@ import {
   toggleGraphEdge,
   UndirectedGraph,
 } from '../lib/undirected-graph';
+import { toggleArrayElement } from '../lib/toggle-array-element';
 
 export const modelName = 'levelConstructor';
 
@@ -26,12 +27,15 @@ export type Fragment = {
   data: string;
 };
 
+export type Decorations = string | null;
+
 export type LevelConstructorState = {
   hoveredGroupId: string | null;
   activeGroupsIds: string[];
   grouping: Grouping;
   neighborsGraph: UndirectedGraph;
   fragments: Fragment[];
+  decorations: Decorations;
 };
 
 const initialState: LevelConstructorState = {
@@ -40,13 +44,8 @@ const initialState: LevelConstructorState = {
   grouping: [],
   neighborsGraph: [],
   fragments: [],
+  decorations: null,
 };
-
-function toggleArrayElement<T>(array: T[], element: T): T[] {
-  return array.includes(element)
-    ? array.filter((elem) => elem !== element)
-    : array.concat(element);
-}
 
 export const levelConstructorSlice = createSlice({
   name: modelName,
@@ -160,6 +159,10 @@ export const levelConstructorSlice = createSlice({
 
       state.neighborsGraph = toggleGraphEdge(neighborsGraph, edge);
     },
+
+    setDecorations: (state, action: PayloadAction<Decorations>) => {
+      state.decorations = action.payload;
+    },
   },
 });
 
@@ -167,6 +170,7 @@ const persistWhiteList: (keyof LevelConstructorState)[] = [
   'grouping',
   'neighborsGraph',
   'fragments',
+  'decorations',
 ];
 
 export const reducer = persistReducer(

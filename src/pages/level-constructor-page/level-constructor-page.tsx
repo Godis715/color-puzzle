@@ -12,6 +12,7 @@ import {
   selectActiveFragmentsIds,
   selectFragments,
   selectHoveredFragmentsIds,
+  selectDecorations,
 } from 'features/level-constructor';
 import { useActions } from 'shared/hooks';
 
@@ -103,6 +104,18 @@ function fragmentToPath(fragment: Fragment): paper.PathItem {
   return path;
 }
 
+function svgToDecorations(svg: string): paper.Item {
+  return paper.project.importSVG(svg, {
+    applyMatrix: true,
+    expandShapes: true,
+    insert: false,
+  });
+}
+
+function decorationsToSvg(item: paper.Item): string {
+  return item.exportSVG({ asString: true }) as string;
+}
+
 function paperForceRedraw(): void {
   setTimeout(() => {
     const canvas = document.getElementById(CANVAS_ID);
@@ -132,20 +145,18 @@ export function LevelConstructorPage(): JSX.Element {
     breakActive,
     toggleNeighbor,
     setFragments,
+    setDecorations,
   } = useActions(actions);
 
   const [fragmentsLayer, setFragmentsLayer] = useState<paper.Layer>();
   const [decorationsLayer, setDecorationsLayer] = useState<paper.Layer>();
   const [group, setGroup] = useState<paper.Layer>();
 
-  const [decorationsConfig, setDecorationsConfig] = useState<string | null>(
-    null
-  );
-
   const hoveredFragmentsIds = useSelector(selectHoveredFragmentsIds);
   const activeFragmentsIds = useSelector(selectActiveFragmentsIds);
   const activeFragmentNeighbors = useSelector(selectActiveFragmentNeighborsIds);
   const fragments = useSelector(selectFragments);
+  const decorations = useSelector(selectDecorations);
 
   const createFragmentHoverHandler = (hoveredFragmentId: string | null) => () =>
     setHoveredFragmentId(hoveredFragmentId);
@@ -198,9 +209,14 @@ export function LevelConstructorPage(): JSX.Element {
       fragments
         .map(fragmentToPath)
         .forEach((path) => path.addTo(fragmentsLayer));
-      paperForceRedraw();
     }
-  }, [fragmentsLayer]);
+
+    if (decorationsLayer && decorations) {
+      svgToDecorations(decorations).addTo(decorationsLayer);
+    }
+
+    paperForceRedraw();
+  }, [fragmentsLayer, decorationsLayer]);
 
   useEffect(() => {
     paper.view.onResize = fitView;
@@ -299,14 +315,12 @@ export function LevelConstructorPage(): JSX.Element {
 
     if (!svgText) return;
 
-    decorationsLayer.importSVG(svgText);
+    const decorationsItem = svgToDecorations(svgText).addTo(decorationsLayer);
 
     // Paper adds rectangle, that represents canvas, as first child, when importing svg
     decorationsLayer.children.at(0)?.children.at(0)?.remove();
 
-    setDecorationsConfig(
-      decorationsLayer.exportSVG({ asString: true }) as string
-    );
+    setDecorations(decorationsToSvg(decorationsItem));
 
     paperForceRedraw();
 

@@ -6,6 +6,7 @@ export {
   selectActiveFragmentsIds,
   selectFragments,
   selectHoveredFragmentsIds,
+  selectDecorations,
 } from './model';
 
 export type { Fragment } from './model';

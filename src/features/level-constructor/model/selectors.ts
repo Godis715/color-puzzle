@@ -61,3 +61,8 @@ export const selectActiveFragmentNeighborsIds = createSelector(
     return getElementsByGroup(grouping, neighborGroups);
   }
 );
+
+export const selectDecorations = createSelector(
+  selectLevelConstructorState,
+  (state) => state.decorations
+);
