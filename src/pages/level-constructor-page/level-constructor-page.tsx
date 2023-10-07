@@ -1,6 +1,6 @@
 /* eslint-disable jsx-a11y/no-noninteractive-element-interactions */
 /* eslint-disable jsx-a11y/click-events-have-key-events */
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import paper from 'paper';
 
 import './style.css';
@@ -70,7 +70,7 @@ function isPathLike(item: paper.Item): boolean {
   return item.className === 'Path' || item.className === 'CompoundPath';
 }
 
-function importFragments(svg: string): paper.PathItem[] {
+function importPathsFromSvg(svg: string): paper.PathItem[] {
   const importedItem = paper.project.importSVG(svg, {
     applyMatrix: true,
     expandShapes: true,
@@ -88,31 +88,39 @@ function importFragments(svg: string): paper.PathItem[] {
   return paths as paper.PathItem[];
 }
 
-function createFragments(fragments: paper.PathItem[] | null): Fragment[] {
-  return (
-    fragments?.map((fragment) => ({
-      id: fragment.id.toString(),
-      data: JSON.parse(fragment.exportJSON({ asString: true }) as string),
-    })) ?? []
-  );
+function pathToFragment(path: paper.PathItem): Fragment {
+  return {
+    id: path.name,
+    data: path.exportJSON({ asString: false }),
+  };
+}
+
+function fragmentToPath(fragment: Fragment): paper.PathItem {
+  const path = new paper.Path();
+
+  path.importJSON(fragment.data);
+
+  return path;
 }
 
 function paperForceRedraw(): void {
-  const canvas = document.getElementById(CANVAS_ID);
+  setTimeout(() => {
+    const canvas = document.getElementById(CANVAS_ID);
 
-  if (!canvas) return;
+    if (!canvas) return;
 
-  const w = canvas.style.width;
+    const w = canvas.style.width;
 
-  const rect = canvas.getBoundingClientRect();
+    const rect = canvas.getBoundingClientRect();
 
-  canvas.style.width = `${rect.width - 1}px`;
+    canvas.style.width = `${rect.width - 0.001}px`;
 
-  window.dispatchEvent(new Event('resize'));
+    window.dispatchEvent(new Event('resize'));
 
-  canvas.style.width = w;
+    canvas.style.width = w;
 
-  window.dispatchEvent(new Event('resize'));
+    window.dispatchEvent(new Event('resize'));
+  }, 1);
 }
 
 export function LevelConstructorPage(): JSX.Element {
@@ -145,7 +153,6 @@ export function LevelConstructorPage(): JSX.Element {
   const createFragmentClickHandler =
     (clickedFragmentId: string) => (event: any) => {
       const isRightButton = event?.event?.button === 2;
-
       const isCtrl = event?.ctrlKey ?? event?.modifiers?.control ?? false;
 
       if (isRightButton) {
@@ -157,11 +164,11 @@ export function LevelConstructorPage(): JSX.Element {
       }
     };
 
-  const fitView = (): void => {
+  const fitView = useCallback((): void => {
     if (group) {
       viewFitBounds(paper.project.view, group.bounds);
     }
-  };
+  }, [group]);
 
   // Paper setup
   useEffect(() => {
@@ -187,15 +194,24 @@ export function LevelConstructorPage(): JSX.Element {
   }, []);
 
   useEffect(() => {
+    if (fragmentsLayer && fragments.length > 0) {
+      fragments
+        .map(fragmentToPath)
+        .forEach((path) => path.addTo(fragmentsLayer));
+      paperForceRedraw();
+    }
+  }, [fragmentsLayer]);
+
+  useEffect(() => {
     paper.view.onResize = fitView;
-  }, [group]);
+  }, [fitView]);
 
   // Coloring fragments on hover
   useEffect(() => {
     if (!fragmentsLayer) return;
 
     fragmentsLayer.children.forEach((fragment) => {
-      const fragmentId = fragment.id.toString();
+      const fragmentId = fragment.name;
 
       const getColor = () => {
         const color = activeFragmentsIds.includes(fragmentId)
@@ -222,7 +238,7 @@ export function LevelConstructorPage(): JSX.Element {
 
   useEffect(() => {
     fragmentsLayer?.children.forEach((fragment) => {
-      const fragmentId = fragment.id.toString();
+      const fragmentId = fragment.name;
       fragment.onMouseEnter = createFragmentHoverHandler(fragmentId);
       fragment.onMouseLeave = createFragmentHoverHandler(null);
       fragment.onClick = createFragmentClickHandler(fragmentId);
@@ -242,9 +258,9 @@ export function LevelConstructorPage(): JSX.Element {
 
     if (!svgText) return;
 
-    const fragmentsPaths = importFragments(svgText);
+    const fragmentsPaths = importPathsFromSvg(svgText);
 
-    setFragments(createFragments(fragmentsPaths));
+    setFragments(fragmentsPaths.map(pathToFragment));
 
     fragmentsLayer.addChildren(fragmentsPaths);
 
