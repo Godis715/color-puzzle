@@ -3,6 +3,9 @@ import { createSlice } from '@reduxjs/toolkit';
 import type { PayloadAction } from '@reduxjs/toolkit';
 import { useDispatch } from 'react-redux';
 import { useMemo } from 'react';
+import { persistReducer } from 'redux-persist';
+import storage from 'redux-persist/lib/storage';
+
 import {
   breakGroup,
   createGrouping,
@@ -178,4 +181,19 @@ export function useActions<T extends Actions>(actions: T): T {
   );
 }
 
-export const { actions, reducer } = levelConstructorSlice;
+const persistWhiteList: (keyof LevelConstructorState)[] = [
+  'grouping',
+  'neighborsGraph',
+  'fragments',
+];
+
+export const reducer = persistReducer(
+  {
+    key: modelName,
+    storage,
+    whitelist: persistWhiteList,
+  },
+  levelConstructorSlice.reducer
+);
+
+export const { actions } = levelConstructorSlice;
