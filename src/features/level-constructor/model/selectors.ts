@@ -1,7 +1,10 @@
 import { createSelector } from 'reselect';
 
 import { getElementsByGroup } from '../lib/grouping';
-import { getGraphNodeNeighbors } from '../lib/undirected-graph';
+import {
+  getAdjacencyList,
+  getGraphNodeNeighbors,
+} from '../lib/undirected-graph';
 import { LevelConstructorState, modelName } from './store';
 
 export const selectLevelConstructorState = (state: Record<string, unknown>) =>
@@ -65,4 +68,38 @@ export const selectActiveFragmentNeighborsIds = createSelector(
 export const selectDecorations = createSelector(
   selectLevelConstructorState,
   (state) => state.decorations
+);
+
+export const selectGroups = createSelector(
+  selectGrouping,
+  selectActiveGroupsIds,
+  selectHoveredGroupId,
+  selectNeighborsGraph,
+  (grouping, activeGroupsIds, hoveredGroupId, neighborsGraph) => {
+    const mapGroupIdToFragmentsIds = grouping.reduce(
+      (acc, [fragmentId, groupId]) => {
+        acc[groupId] ??= [];
+        acc[groupId].push(fragmentId);
+        return acc;
+      },
+      {} as Record<string, string[]>
+    );
+
+    const mapGroupIdToNeighborsIds = getAdjacencyList(neighborsGraph);
+
+    return Object.entries(mapGroupIdToFragmentsIds).map(
+      ([groupId, fragmentIds]) => ({
+        id: groupId,
+        fragmentIds,
+        isActive: activeGroupsIds.includes(groupId),
+        isHovered: hoveredGroupId === groupId,
+        neighbors: mapGroupIdToNeighborsIds[groupId] ?? [],
+      })
+    );
+  }
+);
+
+export const selectFragmentIdToGroupIdMapping = createSelector(
+  selectGrouping,
+  (grouping) => Object.fromEntries(grouping)
 );

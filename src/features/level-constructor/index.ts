@@ -7,6 +7,8 @@ export {
   selectFragments,
   selectHoveredFragmentsIds,
   selectDecorations,
+  selectGroups,
+  selectFragmentIdToGroupIdMapping,
 } from './model';
 
 export type { Fragment } from './model';

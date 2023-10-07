@@ -56,3 +56,19 @@ export function getGraphNodeNeighbors(
     return acc;
   }, [] as string[]);
 }
+
+export function getAdjacencyList(
+  graph: UndirectedGraph
+): Record<string, string[]> {
+  return graph.reduce(
+    (acc, [id1, id2]) => {
+      acc[id1] ??= [];
+      acc[id2] ??= [];
+      acc[id1].push(id2);
+      acc[id2].push(id1);
+
+      return acc;
+    },
+    {} as Record<string, string[]>
+  );
+}

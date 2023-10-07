@@ -51,27 +51,14 @@ export const levelConstructorSlice = createSlice({
   name: modelName,
   initialState,
   reducers: {
-    setHoveredFragmentId: (state, action: PayloadAction<string | null>) => {
-      const { grouping } = state;
-
-      const fragmentId = action.payload;
-
-      if (!fragmentId) {
-        state.hoveredGroupId = null;
-        return;
-      }
-
-      state.hoveredGroupId = getGroupByElement(grouping, fragmentId);
+    setHoveredGroupId: (state, action: PayloadAction<string | null>) => {
+      state.hoveredGroupId = action.payload;
     },
 
-    setActiveFragmentId: (state, action: PayloadAction<string>) => {
-      const { grouping, activeGroupsIds } = state;
+    setActiveGroupId: (state, action: PayloadAction<string>) => {
+      const { activeGroupsIds } = state;
 
-      const fragmentId = action.payload;
-
-      const groupId = getGroupByElement(grouping, fragmentId);
-
-      if (!groupId) return;
+      const groupId = action.payload;
 
       const isMultiSelect = activeGroupsIds.length > 1;
 
@@ -80,14 +67,10 @@ export const levelConstructorSlice = createSlice({
       state.activeGroupsIds = isMultiSelect || isSelfSelect ? [groupId] : [];
     },
 
-    toggleActiveFragmentId: (state, action: PayloadAction<string>) => {
-      const { grouping, activeGroupsIds } = state;
+    toggleActiveGroupId: (state, action: PayloadAction<string>) => {
+      const { activeGroupsIds } = state;
 
-      const fragmentId = action.payload;
-
-      const groupId = getGroupByElement(grouping, fragmentId);
-
-      if (!groupId) return;
+      const groupId = action.payload;
 
       state.activeGroupsIds = toggleArrayElement(activeGroupsIds, groupId);
     },
@@ -141,17 +124,13 @@ export const levelConstructorSlice = createSlice({
     },
 
     toggleNeighbor: (state, action: PayloadAction<string>) => {
-      const { activeGroupsIds, grouping, neighborsGraph } = state;
+      const { activeGroupsIds, neighborsGraph } = state;
 
       const isSingleSelect = activeGroupsIds.length === 1;
 
       if (!isSingleSelect) return;
 
-      const fragmentId = action.payload;
-
-      const groupId = getGroupByElement(grouping, fragmentId);
-
-      if (!groupId) return;
+      const groupId = action.payload;
 
       const activeGroupId = activeGroupsIds[0];
 
