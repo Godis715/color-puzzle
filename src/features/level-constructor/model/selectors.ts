@@ -107,6 +107,11 @@ export const selectGroups = createSelector(
 
     const mapGroupIdToNeighborsIds = getAdjacencyList(neighborsGraph);
 
+    const neighborGroups = getGraphNodeNeighbors(
+      neighborsGraph,
+      activeGroupsIds
+    );
+
     return Object.entries(mapGroupIdToFragmentsIds).map(
       ([groupId, fragmentIds]) => ({
         id: groupId,
@@ -115,6 +120,7 @@ export const selectGroups = createSelector(
         isHovered: hoveredGroupId === groupId,
         neighbors: mapGroupIdToNeighborsIds[groupId] ?? [],
         isReady: readyGroups.includes(groupId),
+        isActiveNeighbor: neighborGroups.includes(groupId),
       })
     );
   }

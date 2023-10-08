@@ -9,10 +9,7 @@ import { useSelector } from 'react-redux';
 import {
   Fragment,
   actions,
-  selectActiveFragmentNeighborsIds,
-  selectActiveFragmentsIds,
   selectFragments,
-  selectHoveredFragmentsIds,
   selectDecorations,
   selectGroups,
   selectFragmentIdToGroupIdMapping,
@@ -20,10 +17,9 @@ import {
   selectIsSingleSelection,
 } from 'features/level-constructor';
 import { useActions } from 'shared/hooks';
+import { FRAG_DEFAULT_COLOR, getFragmentColor } from './get-fragment-color';
 
 const CANVAS_ID = 'paper-canvas';
-
-const FRAG_DEFAULT_COLOR = new paper.Color('#ECECEC');
 
 function getFileContentAsText(file: File): Promise<string> {
   const reader = new FileReader();
@@ -81,7 +77,7 @@ function importPathsFromSvg(svg: string): paper.PathItem[] {
     insert: false,
   });
 
-  const paths = flattenChildren(importedItem).filter(isPathLike);
+  const paths = flattenChildren(importedItem).filter(isPathLike).reverse();
 
   paths.forEach((path) => {
     path.fillColor = FRAG_DEFAULT_COLOR;
@@ -139,36 +135,6 @@ function paperForceRedraw(): void {
   }, 1);
 }
 
-function gerFragmentColor({
-  isActive,
-  isHovered,
-  isActiveNeighbor,
-}: {
-  isActive: boolean;
-  isHovered: boolean;
-  isActiveNeighbor: boolean;
-}): paper.Color {
-  const color = new paper.Color(FRAG_DEFAULT_COLOR);
-
-  if (isActive) {
-    color.red -= 0.3;
-    color.green -= 0.2;
-  }
-
-  if (isHovered) {
-    color.red -= 0.07;
-    color.green -= 0.07;
-    color.blue -= 0.03;
-  }
-
-  if (isActiveNeighbor) {
-    color.red -= 0.1;
-    color.blue -= 0.1;
-  }
-
-  return color;
-}
-
 const cnGroupList = cn('GroupList');
 
 export function LevelConstructorPage(): JSX.Element {
@@ -188,9 +154,6 @@ export function LevelConstructorPage(): JSX.Element {
   const [decorationsLayer, setDecorationsLayer] = useState<paper.Layer>();
   const [rootLayer, setRootLayer] = useState<paper.Layer>();
 
-  const hoveredFragmentsIds = useSelector(selectHoveredFragmentsIds);
-  const activeFragmentsIds = useSelector(selectActiveFragmentsIds);
-  const activeFragmentNeighbors = useSelector(selectActiveFragmentNeighborsIds);
   const fragments = useSelector(selectFragments);
   const decorations = useSelector(selectDecorations);
   const groups = useSelector(selectGroups);
@@ -265,18 +228,24 @@ export function LevelConstructorPage(): JSX.Element {
   useEffect(() => {
     if (!fragmentsLayer) return;
 
-    fragmentsLayer.children.forEach((fragment) => {
-      const fragmentId = fragment.name;
+    const hasActive = groups.some(({ isActive }) => isActive);
 
-      const color = gerFragmentColor({
-        isActive: activeFragmentsIds.includes(fragmentId),
-        isHovered: hoveredFragmentsIds.includes(fragmentId),
-        isActiveNeighbor: activeFragmentNeighbors.includes(fragmentId),
+    groups.forEach((group) => {
+      group.fragmentIds.forEach((fragmentId) => {
+        const fragment = fragmentsLayer.getItem({ name: fragmentId });
+
+        const color = getFragmentColor({
+          hasActive,
+          isActive: group.isActive,
+          isHovered: group.isHovered,
+          isActiveNeighbor: group.isActiveNeighbor,
+          isReady: group.isReady,
+        });
+
+        fragment.tweenTo({ fillColor: color }, 60);
       });
-
-      fragment.tweenTo({ fillColor: color }, 60);
     });
-  }, [hoveredFragmentsIds, activeFragmentsIds, activeFragmentNeighbors]);
+  }, [fragmentsLayer, groups]);
 
   useEffect(() => {
     fragmentsLayer?.children.forEach((fragment) => {
@@ -398,7 +367,16 @@ export function LevelConstructorPage(): JSX.Element {
           </ul>
 
           {isSingleSelection && (
-            <button onClick={() => toggleIsActiveGroupReady()}>
+            <button
+              type="button"
+              onClick={() => {
+                toggleIsActiveGroupReady();
+
+                if (!isActiveGroupReady) {
+                  setActiveGroupId(null);
+                }
+              }}
+            >
               {isActiveGroupReady ? 'Mark as NOT ready' : 'Mark as ready'}
             </button>
           )}

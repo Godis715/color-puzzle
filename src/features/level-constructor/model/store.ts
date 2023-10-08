@@ -56,7 +56,7 @@ export const levelConstructorSlice = createSlice({
       state.hoveredGroupId = action.payload;
     },
 
-    setActiveGroupId: (state, action: PayloadAction<string>) => {
+    setActiveGroupId: (state, action: PayloadAction<string | null>) => {
       const { activeGroupsIds } = state;
 
       const groupId = action.payload;
@@ -65,7 +65,8 @@ export const levelConstructorSlice = createSlice({
 
       const isSelfSelect = activeGroupsIds[0] !== groupId;
 
-      state.activeGroupsIds = isMultiSelect || isSelfSelect ? [groupId] : [];
+      state.activeGroupsIds =
+        (isMultiSelect || isSelfSelect) && groupId ? [groupId] : [];
     },
 
     toggleActiveGroupId: (state, action: PayloadAction<string>) => {
@@ -78,6 +79,8 @@ export const levelConstructorSlice = createSlice({
 
     uniteActive: (state) => {
       const { activeGroupsIds, grouping, neighborsGraph } = state;
+
+      // TOOD: change ready array, when uniting groups
 
       const isMultiSelect = activeGroupsIds.length > 1;
 
@@ -99,6 +102,8 @@ export const levelConstructorSlice = createSlice({
     breakActive: (state) => {
       const { activeGroupsIds, grouping, neighborsGraph } = state;
 
+      // TOOD: change ready array, when breaking groups
+
       const isSingleSelect = activeGroupsIds.length === 1;
 
       if (!isSingleSelect) return;
@@ -108,10 +113,6 @@ export const levelConstructorSlice = createSlice({
       state.grouping = breakGroup(grouping, activeGroupId);
 
       state.neighborsGraph = removeGraphNodes(neighborsGraph, [activeGroupId]);
-    },
-
-    setNeighborsGraph: (state, action: PayloadAction<UndirectedGraph>) => {
-      state.neighborsGraph = action.payload;
     },
 
     setFragments: (state, action: PayloadAction<Fragment[]>) => {
@@ -149,8 +150,6 @@ export const levelConstructorSlice = createSlice({
     },
 
     toggleIsActiveGroupReady: (state) => {
-      console.log('!!!');
-
       const { activeGroupsIds, readyGroups } = state;
 
       const isSingleSelect = activeGroupsIds.length === 1;
