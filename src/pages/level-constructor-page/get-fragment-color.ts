@@ -1,3 +1,5 @@
+import paper from 'paper';
+
 export const FRAG_DEFAULT_COLOR = new paper.Color('#ECECEC');
 
 function getFragmentColorWhenSelection({

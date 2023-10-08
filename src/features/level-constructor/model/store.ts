@@ -23,7 +23,7 @@ export const modelName = 'levelConstructor';
 
 export type Fragment = {
   id: string;
-  data: string;
+  data: any;
 };
 
 export type Decorations = string | null;
@@ -160,6 +160,8 @@ export const levelConstructorSlice = createSlice({
 
       state.readyGroups = toggleArrayElement(readyGroups, groupId);
     },
+
+    reset: (state) => Object.assign(state, initialState),
   },
 });
 

@@ -96,11 +96,16 @@ function pathToFragment(path: paper.PathItem): Fragment {
 }
 
 function fragmentToPath(fragment: Fragment): paper.PathItem {
-  const path = new paper.Path();
+  const className = fragment.data[0];
 
-  path.importJSON(fragment.data);
+  const item =
+    className === 'CompoundPath'
+      ? new paper.CompoundPath('')
+      : new paper.Path();
 
-  return path;
+  item.importJSON(fragment.data);
+
+  return item;
 }
 
 function svgToDecorations(svg: string): paper.Item {
@@ -148,6 +153,7 @@ export function LevelConstructorPage(): JSX.Element {
     setDecorations,
     setHoveredGroupId,
     toggleIsActiveGroupReady,
+    reset: resetState,
   } = useActions(actions);
 
   const [fragmentsLayer, setFragmentsLayer] = useState<paper.Layer>();
@@ -233,6 +239,10 @@ export function LevelConstructorPage(): JSX.Element {
     groups.forEach((group) => {
       group.fragmentIds.forEach((fragmentId) => {
         const fragment = fragmentsLayer.getItem({ name: fragmentId });
+
+        console.log(fragmentId, fragment);
+
+        if (!fragment) return;
 
         const color = getFragmentColor({
           hasActive,
@@ -424,6 +434,25 @@ export function LevelConstructorPage(): JSX.Element {
         <div>
           <button type="button" onClick={handleBreak}>
             Break
+          </button>
+        </div>
+
+        <div>
+          <button
+            type="button"
+            onClick={() => {
+              const isConfirmed = confirm(
+                'Current progress will be deleted. Continue?'
+              );
+
+              if (isConfirmed) {
+                resetState();
+                fragmentsLayer?.removeChildren();
+                decorationsLayer?.removeChildren();
+              }
+            }}
+          >
+            Reset
           </button>
         </div>
 
