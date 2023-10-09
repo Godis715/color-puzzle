@@ -17,6 +17,10 @@ import {
   selectIsSingleSelection,
 } from 'features/level-constructor';
 import { useActions } from 'shared/hooks';
+import {
+  selectChromaticNumber,
+  selectGraphColoring,
+} from 'features/level-constructor/model';
 import { FRAG_DEFAULT_COLOR, getFragmentColor } from './get-fragment-color';
 
 const CANVAS_ID = 'paper-canvas';
@@ -142,6 +146,11 @@ function paperForceRedraw(): void {
 
 const cnGroupList = cn('GroupList');
 
+enum FragmentsViewMode {
+  ReadinessColoring,
+  SolutionColoring,
+}
+
 export function LevelConstructorPage(): JSX.Element {
   const {
     setActiveGroupId,
@@ -159,6 +168,7 @@ export function LevelConstructorPage(): JSX.Element {
   const [fragmentsLayer, setFragmentsLayer] = useState<paper.Layer>();
   const [decorationsLayer, setDecorationsLayer] = useState<paper.Layer>();
   const [rootLayer, setRootLayer] = useState<paper.Layer>();
+  const [shouldShowColoring, setShouldShowColoring] = useState(false);
 
   const fragments = useSelector(selectFragments);
   const decorations = useSelector(selectDecorations);
@@ -166,6 +176,8 @@ export function LevelConstructorPage(): JSX.Element {
   const mapFragmentIdToGroupId = useSelector(selectFragmentIdToGroupIdMapping);
   const isActiveGroupReady = useSelector(selectIsActiveGroupReady);
   const isSingleSelection = useSelector(selectIsSingleSelection);
+  const chromaticNumber = useSelector(selectChromaticNumber);
+  const coloring = useSelector(selectGraphColoring);
 
   const createGroupHoverHandler = (hoveredGroupId: string | null) => () =>
     setHoveredGroupId(hoveredGroupId);
@@ -240,22 +252,22 @@ export function LevelConstructorPage(): JSX.Element {
       group.fragmentIds.forEach((fragmentId) => {
         const fragment = fragmentsLayer.getItem({ name: fragmentId });
 
-        console.log(fragmentId, fragment);
-
         if (!fragment) return;
 
-        const color = getFragmentColor({
-          hasActive,
-          isActive: group.isActive,
-          isHovered: group.isHovered,
-          isActiveNeighbor: group.isActiveNeighbor,
-          isReady: group.isReady,
-        });
+        const color = shouldShowColoring
+          ? coloring[group.id]
+          : getFragmentColor({
+              isActive: group.isActive,
+              isHovered: group.isHovered,
+              isActiveNeighbor: group.isActiveNeighbor,
+              isReady: group.isReady,
+              hasActive,
+            });
 
         fragment.tweenTo({ fillColor: color }, 60);
       });
     });
-  }, [fragmentsLayer, groups]);
+  }, [fragmentsLayer, groups, shouldShowColoring, coloring]);
 
   useEffect(() => {
     fragmentsLayer?.children.forEach((fragment) => {
@@ -347,6 +359,16 @@ export function LevelConstructorPage(): JSX.Element {
     <div>
       <h2>Level Constructor</h2>
 
+      <div>
+        <input
+          id="show-coloring-checkbox"
+          type="checkbox"
+          checked={shouldShowColoring}
+          onChange={(ev) => setShouldShowColoring(ev.target.checked)}
+        />
+        <label htmlFor="show-coloring-checkbox">Show coloring</label>
+      </div>
+
       <div className="workspace">
         <div className="canvas-container">
           <canvas
@@ -357,6 +379,7 @@ export function LevelConstructorPage(): JSX.Element {
         </div>
 
         <div>
+          Chromatic number: {chromaticNumber}
           <ul className={cnGroupList()}>
             {groups.map((group) => (
               <li
@@ -375,7 +398,6 @@ export function LevelConstructorPage(): JSX.Element {
               </li>
             ))}
           </ul>
-
           {isSingleSelection && (
             <button
               type="button"

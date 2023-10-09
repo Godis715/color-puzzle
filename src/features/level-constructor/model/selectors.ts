@@ -1,4 +1,5 @@
 import { createSelector } from 'reselect';
+import { getGraphColoring } from 'shared/lib/graph-coloring-solver';
 
 import { getElementsByGroup } from '../lib/grouping';
 import {
@@ -134,4 +135,65 @@ export const selectFragmentIdToGroupIdMapping = createSelector(
 export const selectIsSingleSelection = createSelector(
   selectActiveGroupsIds,
   (activeGroupsIds) => activeGroupsIds.length === 1
+);
+
+export const selectGraphColoringRaw = createSelector(
+  selectGroups,
+  selectNeighborsGraph,
+  (groups, neighborsGraph) => {
+    const groupsIds = groups.map(({ id }) => id);
+    const mapGroupIdToIdx = Object.fromEntries(
+      groupsIds.map((id, i) => [id, i])
+    );
+
+    const encodedGraph = new Array(groupsIds.length)
+      .fill(null)
+      .map(() => [] as number[]);
+
+    neighborsGraph.forEach(([n1, n2]) => {
+      const i1 = mapGroupIdToIdx[n1];
+      const i2 = mapGroupIdToIdx[n2];
+      encodedGraph[i1].push(i2);
+      encodedGraph[i2].push(i1);
+    });
+
+    const coloring = getGraphColoring(encodedGraph);
+
+    const mapGroupToColor = Object.fromEntries(
+      coloring.map((color, i) => [groupsIds[i], color])
+    );
+
+    return mapGroupToColor;
+  }
+);
+
+const colors = [
+  '#ff99cc',
+  '#ccff99',
+  '#99ccff',
+  '#ffcc99',
+  '#cc99ff',
+  '#99ffcc',
+  '#ffffcc',
+  '#ffcccc',
+  '#ccccff',
+  '#ccffff',
+  '#ccffcc',
+  '#ffccff',
+];
+
+export const selectGraphColoring = createSelector(
+  selectGraphColoringRaw,
+  (coloring) =>
+    Object.fromEntries(
+      Object.entries(coloring).map(([gorupId, color]) => [
+        gorupId,
+        colors[color],
+      ])
+    )
+);
+
+export const selectChromaticNumber = createSelector(
+  selectGraphColoringRaw,
+  (coloring) => Math.max(-1, ...Object.values(coloring)) + 1
 );
