@@ -12,11 +12,25 @@ canvas[data-paper-resize="true"] {
   // border: 1px solid gray;
 }
 
+.viewport {
+  display: block;
+  width: 300px;
+  position: relative;
+
+  & > * {
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    right: 0
+  }
+}
+
 .GroupList {
   &-Item {
     cursor: pointer;
 
-    &::after {
+    &::before {
       display: inline-block;
       content: '';
       width: 8px;
@@ -26,7 +40,7 @@ canvas[data-paper-resize="true"] {
       border-radius: 50%;
     }
 
-    &_isReady::after {
+    &_isReady::before {
       background-color: green;
     }
 

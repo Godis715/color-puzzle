@@ -1,7 +1,7 @@
 /* eslint-disable jsx-a11y/no-noninteractive-element-interactions */
 /* eslint-disable jsx-a11y/click-events-have-key-events */
 import { useCallback, useEffect, useState } from 'react';
-import { cn } from '@bem-react/classname';
+import SVG from 'react-inlinesvg';
 import paper from 'paper';
 
 import './style.scss';
@@ -37,7 +37,7 @@ function getFileContentAsText(file: File): Promise<string> {
   });
 }
 
-function viewFitBounds(view: paper.View, itemBounds: paper.Rectangle): void {
+function viewFitBounds(view: paper.Item, itemBounds: paper.Rectangle): void {
   const viewBounds = view.bounds;
 
   if (!viewBounds.area || !itemBounds.area) return;
@@ -75,13 +75,20 @@ function isPathLike(item: paper.Item): boolean {
 }
 
 function importPathsFromSvg(svg: string): paper.PathItem[] {
+  const g = new paper.Group();
+
   const importedItem = paper.project.importSVG(svg, {
     applyMatrix: true,
     expandShapes: true,
     insert: false,
   });
 
-  const paths = flattenChildren(importedItem).filter(isPathLike).reverse();
+  const paths = flattenChildren(importedItem)
+    .filter(isPathLike)
+    .reverse()
+    .map((p) => p.addTo(g));
+
+  g.fitBounds(new paper.Rectangle(0, 0, 100, 100));
 
   paths.forEach((path) => {
     path.fillColor = FRAG_DEFAULT_COLOR;
@@ -95,7 +102,7 @@ function importPathsFromSvg(svg: string): paper.PathItem[] {
 function pathToFragment(path: paper.PathItem): Fragment {
   return {
     id: path.name,
-    data: path.exportJSON({ asString: false }),
+    data: path.pathData,
   };
 }
 
@@ -121,6 +128,11 @@ function svgToDecorations(svg: string): paper.Item {
 }
 
 function decorationsToSvg(item: paper.Item): string {
+  const g = new paper.Group();
+  item.addTo(g);
+
+  g.fitBounds(new paper.Rectangle(0, 0, 100, 100));
+
   return item.exportSVG({ asString: true }) as string;
 }
 
@@ -144,13 +156,6 @@ function paperForceRedraw(): void {
   }, 1);
 }
 
-const cnGroupList = cn('GroupList');
-
-enum FragmentsViewMode {
-  ReadinessColoring,
-  SolutionColoring,
-}
-
 export function LevelConstructorPage(): JSX.Element {
   const {
     setActiveGroupId,
@@ -165,9 +170,6 @@ export function LevelConstructorPage(): JSX.Element {
     reset: resetState,
   } = useActions(actions);
 
-  const [fragmentsLayer, setFragmentsLayer] = useState<paper.Layer>();
-  const [decorationsLayer, setDecorationsLayer] = useState<paper.Layer>();
-  const [rootLayer, setRootLayer] = useState<paper.Layer>();
   const [shouldShowColoring, setShouldShowColoring] = useState(false);
 
   const fragments = useSelector(selectFragments);
@@ -178,6 +180,10 @@ export function LevelConstructorPage(): JSX.Element {
   const isSingleSelection = useSelector(selectIsSingleSelection);
   const chromaticNumber = useSelector(selectChromaticNumber);
   const coloring = useSelector(selectGraphColoring);
+
+  useEffect(() => {
+    paper.setup(CANVAS_ID);
+  }, []);
 
   const createGroupHoverHandler = (hoveredGroupId: string | null) => () =>
     setHoveredGroupId(hoveredGroupId);
@@ -195,97 +201,11 @@ export function LevelConstructorPage(): JSX.Element {
     }
   };
 
-  const fitView = useCallback((): void => {
-    if (rootLayer) {
-      viewFitBounds(paper.project.view, rootLayer.bounds);
-    }
-  }, [rootLayer]);
-
-  // Paper setup
-  useEffect(() => {
-    paper.setup(CANVAS_ID);
-
-    const g = new paper.Layer();
-
-    setRootLayer(g);
-
-    const fragLayer = new paper.Layer().addTo(g);
-
-    setFragmentsLayer(fragLayer);
-
-    const decLayer = new paper.Layer().addTo(g);
-
-    decLayer.locked = true;
-
-    setDecorationsLayer(decLayer);
-
-    paper.project.view.on('mouseleave', () => setHoveredGroupId(null));
-
-    return () => paper.project.clear();
-  }, []);
-
-  useEffect(() => {
-    if (fragmentsLayer && fragments.length > 0) {
-      fragments
-        .map(fragmentToPath)
-        .forEach((path) => path.addTo(fragmentsLayer));
-    }
-
-    if (decorationsLayer && decorations) {
-      svgToDecorations(decorations).addTo(decorationsLayer);
-    }
-
-    paperForceRedraw();
-  }, [fragmentsLayer, decorationsLayer]);
-
-  useEffect(() => {
-    paper.view.onResize = fitView;
-  }, [fitView]);
-
-  // Coloring fragments on hover
-  useEffect(() => {
-    if (!fragmentsLayer) return;
-
-    const hasActive = groups.some(({ isActive }) => isActive);
-
-    groups.forEach((group) => {
-      group.fragmentIds.forEach((fragmentId) => {
-        const fragment = fragmentsLayer.getItem({ name: fragmentId });
-
-        if (!fragment) return;
-
-        const color = shouldShowColoring
-          ? coloring[group.id]
-          : getFragmentColor({
-              isActive: group.isActive,
-              isHovered: group.isHovered,
-              isActiveNeighbor: group.isActiveNeighbor,
-              isReady: group.isReady,
-              hasActive,
-            });
-
-        fragment.tweenTo({ fillColor: color }, 60);
-      });
-    });
-  }, [fragmentsLayer, groups, shouldShowColoring, coloring]);
-
-  useEffect(() => {
-    fragmentsLayer?.children.forEach((fragment) => {
-      const groupId = mapFragmentIdToGroupId[fragment.name];
-
-      if (!groupId) return;
-
-      fragment.onMouseEnter = createGroupHoverHandler(groupId);
-      fragment.onMouseLeave = createGroupHoverHandler(null);
-      fragment.onClick = createGroupClickHandler(groupId);
-    });
-  }, [fragmentsLayer, fragments, mapFragmentIdToGroupId]);
+  const hasActive = groups.some(({ isActive }) => isActive);
 
   const handleUploadFragmentsChange = async (
     ev: React.ChangeEvent<HTMLInputElement>
   ): Promise<void> => {
-    if (!fragmentsLayer) return;
-
     const file = ev.target.files?.item(0) ?? null;
 
     if (!file) return;
@@ -297,12 +217,6 @@ export function LevelConstructorPage(): JSX.Element {
     const fragmentsPaths = importPathsFromSvg(svgText);
 
     setFragments(fragmentsPaths.map(pathToFragment));
-
-    fragmentsLayer.addChildren(fragmentsPaths);
-
-    paperForceRedraw();
-
-    fitView();
   };
 
   const handleUploadFragmentsClick = (
@@ -329,22 +243,14 @@ export function LevelConstructorPage(): JSX.Element {
 
     const svgText = await getFileContentAsText(file);
 
-    if (!decorationsLayer) return;
-
-    decorationsLayer.removeChildren();
-
     if (!svgText) return;
 
-    const decorationsItem = svgToDecorations(svgText).addTo(decorationsLayer);
+    const decorationsItem = svgToDecorations(svgText);
 
     // Paper adds rectangle, that represents canvas, as first child, when importing svg
-    decorationsLayer.children.at(0)?.children.at(0)?.remove();
+    decorationsItem?.children.at(0)?.remove();
 
     setDecorations(decorationsToSvg(decorationsItem));
-
-    paperForceRedraw();
-
-    fitView();
   };
 
   const handleUnite = (): void => {
@@ -355,52 +261,88 @@ export function LevelConstructorPage(): JSX.Element {
     breakActive();
   };
 
+  console.log(decorations);
+
   return (
     <div>
       <h2>Level Constructor</h2>
 
-      <div>
-        <input
-          id="show-coloring-checkbox"
-          type="checkbox"
-          checked={shouldShowColoring}
-          onChange={(ev) => setShouldShowColoring(ev.target.checked)}
-        />
-        <label htmlFor="show-coloring-checkbox">Show coloring</label>
-      </div>
+      <canvas id={CANVAS_ID} style={{ display: 'none' }} />
 
       <div className="workspace">
-        <div className="canvas-container">
-          <canvas
-            data-paper-resize="true"
-            id={CANVAS_ID}
-            onContextMenu={(ev) => ev.preventDefault()}
-          />
+        <div className="viewport">
+          <svg viewBox="0 0 100 100">
+            {groups.map((group) =>
+              group.fragmentIds.map((fragmentId) => {
+                const fragment = fragments.find(({ id }) => id === fragmentId);
+
+                if (!fragment) return null;
+
+                const { red, green, blue } = shouldShowColoring
+                  ? new paper.Color(coloring[group.id])
+                  : getFragmentColor({
+                      isActive: group.isActive,
+                      isHovered: group.isHovered,
+                      isActiveNeighbor: group.isActiveNeighbor,
+                      isReady: group.isReady,
+                      hasActive,
+                    });
+
+                return (
+                  <path
+                    d={fragment.data}
+                    key={group.id}
+                    fill={`rgb(${256 * red},${256 * green},${256 * blue})`}
+                    onMouseEnter={createGroupHoverHandler(group.id)}
+                    onMouseLeave={createGroupHoverHandler(null)}
+                    onClick={createGroupClickHandler(group.id)}
+                  />
+                );
+              })
+            )}
+          </svg>
+
+          {decorations && (
+            /** @ts-ignore */
+            <SVG
+              src={`<svg>${decorations}</svg>`}
+              style={{ pointerEvents: 'none' }}
+              viewBox="0 0 100 100"
+            />
+          )}
         </div>
 
         <div>
-          Chromatic number: {chromaticNumber}
-          <ul className={cnGroupList()}>
-            {groups.map((group) => (
-              <li
-                key={group.id}
-                onMouseEnter={createGroupHoverHandler(group.id)}
-                onMouseLeave={createGroupHoverHandler(null)}
-                onClick={createGroupClickHandler(group.id)}
-                className={cnGroupList('Item', {
-                  isActive: group.isActive,
-                  isHovered: group.isHovered,
-                  isReady: group.isReady,
-                })}
-              >
-                {group.id} ({group.neighbors.length})
-                {group.fragmentIds.length > 1 && ' (multi)'}
-              </li>
-            ))}
-          </ul>
-          {isSingleSelection && (
+          <div>Chromatic number: {chromaticNumber}</div>
+          <div>Groups: {groups.length}</div>
+
+          <div>
+            <div>
+              <input
+                id="show-coloring-checkbox"
+                type="checkbox"
+                checked={shouldShowColoring}
+                onChange={(ev) => setShouldShowColoring(ev.target.checked)}
+              />
+              <label htmlFor="show-coloring-checkbox">Show coloring</label>
+            </div>
+
+            <div>
+              <button type="button" onClick={handleUnite}>
+                Unite
+              </button>
+
+              <button type="button" onClick={handleBreak}>
+                Break
+              </button>
+            </div>
+          </div>
+
+          <div>
             <button
               type="button"
+              style={{ marginTop: '3em' }}
+              disabled={!isSingleSelection}
               onClick={() => {
                 toggleIsActiveGroupReady();
 
@@ -411,75 +353,45 @@ export function LevelConstructorPage(): JSX.Element {
             >
               {isActiveGroupReady ? 'Mark as NOT ready' : 'Mark as ready'}
             </button>
-          )}
-        </div>
-      </div>
+          </div>
 
-      <div>
-        <div>
-          <label htmlFor="upload-fragments">Upload fragments</label>
-          <input
-            id="upload-fragments"
-            type="file"
-            onClick={handleUploadFragmentsClick}
-            onChange={handleUploadFragmentsChange}
-          />
-        </div>
+          <div style={{ marginTop: '5em' }}>
+            <div>
+              <label htmlFor="upload-fragments">Upload fragments</label>
+              <input
+                id="upload-fragments"
+                type="file"
+                onClick={handleUploadFragmentsClick}
+                onChange={handleUploadFragmentsChange}
+              />
+            </div>
 
-        <div>
-          <label htmlFor="upload-decorations">Upload decorations</label>
-          <input
-            id="upload-decorations"
-            type="file"
-            onChange={handleUploadDecorationFile}
-          />
-        </div>
+            <div>
+              <label htmlFor="upload-decorations">Upload decorations</label>
+              <input
+                id="upload-decorations"
+                type="file"
+                onChange={handleUploadDecorationFile}
+              />
+            </div>
+          </div>
 
-        <div>
-          <button
-            type="button"
-            onClick={() => {
-              if (fragmentsLayer)
-                fragmentsLayer.visible = !fragmentsLayer.visible;
-            }}
-          >
-            Toggle fragments
-          </button>
-        </div>
+          <div>
+            <button
+              type="button"
+              onClick={() => {
+                const isConfirmed = confirm(
+                  'Current progress will be deleted. Continue?'
+                );
 
-        <div>
-          <button type="button" onClick={handleUnite}>
-            Unite
-          </button>
-        </div>
-
-        <div>
-          <button type="button" onClick={handleBreak}>
-            Break
-          </button>
-        </div>
-
-        <div>
-          <button
-            type="button"
-            onClick={() => {
-              const isConfirmed = confirm(
-                'Current progress will be deleted. Continue?'
-              );
-
-              if (isConfirmed) {
-                resetState();
-                fragmentsLayer?.removeChildren();
-                decorationsLayer?.removeChildren();
-              }
-            }}
-          >
-            Reset
-          </button>
-        </div>
-
-        <div>
-          <button type="button">Continue</button>
+                if (isConfirmed) {
+                  resetState();
+                }
+              }}
+            >
+              Reset
+            </button>
+          </div>
         </div>
       </div>
     </div>
