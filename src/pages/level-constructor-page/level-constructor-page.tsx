@@ -1,6 +1,6 @@
 /* eslint-disable jsx-a11y/no-noninteractive-element-interactions */
 /* eslint-disable jsx-a11y/click-events-have-key-events */
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import SVG from 'react-inlinesvg';
 import paper from 'paper';
 
@@ -12,7 +12,6 @@ import {
   selectFragments,
   selectDecorations,
   selectGroups,
-  selectFragmentIdToGroupIdMapping,
   selectIsActiveGroupReady,
   selectIsSingleSelection,
 } from 'features/level-constructor';
@@ -35,20 +34,6 @@ function getFileContentAsText(file: File): Promise<string> {
 
     reader.readAsText(file);
   });
-}
-
-function viewFitBounds(view: paper.Item, itemBounds: paper.Rectangle): void {
-  const viewBounds = view.bounds;
-
-  if (!viewBounds.area || !itemBounds.area) return;
-
-  const scaleRatio = Math.min(
-    viewBounds.width / itemBounds.width,
-    viewBounds.height / itemBounds.height
-  );
-
-  view.translate(viewBounds.center.subtract(itemBounds.center));
-  view.scale(scaleRatio);
 }
 
 function flattenChildren(item: paper.Item): paper.Item[] {
@@ -106,19 +91,6 @@ function pathToFragment(path: paper.PathItem): Fragment {
   };
 }
 
-function fragmentToPath(fragment: Fragment): paper.PathItem {
-  const className = fragment.data[0];
-
-  const item =
-    className === 'CompoundPath'
-      ? new paper.CompoundPath('')
-      : new paper.Path();
-
-  item.importJSON(fragment.data);
-
-  return item;
-}
-
 function svgToDecorations(svg: string): paper.Item {
   return paper.project.importSVG(svg, {
     applyMatrix: true,
@@ -136,24 +108,37 @@ function decorationsToSvg(item: paper.Item): string {
   return item.exportSVG({ asString: true }) as string;
 }
 
-function paperForceRedraw(): void {
-  setTimeout(() => {
-    const canvas = document.getElementById(CANVAS_ID);
+function parseSvg(svg: string): any {
+  const g = new paper.Group();
+  const fragmentsGroup = new paper.Group().addTo(g);
+  const decorationsGroups = new paper.Group().addTo(g);
 
-    if (!canvas) return;
+  const svgRoot = paper.project.importSVG(svg, {
+    applyMatrix: true,
+    expandShapes: true,
+    insert: false,
+  });
 
-    const w = canvas.style.width;
+  const [fragments, decorations] = svgRoot.children.slice(1);
 
-    const rect = canvas.getBoundingClientRect();
+  console.log(svgRoot, fragments, decorations);
 
-    canvas.style.width = `${rect.width - 0.001}px`;
+  const paths = flattenChildren(fragments)
+    .filter(isPathLike)
+    .reverse()
+    .map((p) => p.addTo(fragmentsGroup)) as paper.PathItem[];
 
-    window.dispatchEvent(new Event('resize'));
+  decorations.addTo(decorationsGroups);
 
-    canvas.style.width = w;
+  g.fitBounds(new paper.Rectangle(0, 0, 100, 100));
 
-    window.dispatchEvent(new Event('resize'));
-  }, 1);
+  return {
+    fragments: paths.map((path) => ({
+      id: path.name,
+      data: path.pathData,
+    })),
+    decorations: decorations.exportSVG({ asString: true }),
+  };
 }
 
 export function LevelConstructorPage(): JSX.Element {
@@ -175,7 +160,6 @@ export function LevelConstructorPage(): JSX.Element {
   const fragments = useSelector(selectFragments);
   const decorations = useSelector(selectDecorations);
   const groups = useSelector(selectGroups);
-  const mapFragmentIdToGroupId = useSelector(selectFragmentIdToGroupIdMapping);
   const isActiveGroupReady = useSelector(selectIsActiveGroupReady);
   const isSingleSelection = useSelector(selectIsSingleSelection);
   const chromaticNumber = useSelector(selectChromaticNumber);
@@ -214,9 +198,10 @@ export function LevelConstructorPage(): JSX.Element {
 
     if (!svgText) return;
 
-    const fragmentsPaths = importPathsFromSvg(svgText);
+    const res = parseSvg(svgText);
 
-    setFragments(fragmentsPaths.map(pathToFragment));
+    setFragments(res.fragments);
+    setDecorations(res.decorations);
   };
 
   const handleUploadFragmentsClick = (
@@ -234,25 +219,6 @@ export function LevelConstructorPage(): JSX.Element {
     }
   };
 
-  const handleUploadDecorationFile = async (
-    ev: React.ChangeEvent<HTMLInputElement>
-  ): Promise<void> => {
-    const file = ev.target.files?.item(0) ?? null;
-
-    if (!file) return;
-
-    const svgText = await getFileContentAsText(file);
-
-    if (!svgText) return;
-
-    const decorationsItem = svgToDecorations(svgText);
-
-    // Paper adds rectangle, that represents canvas, as first child, when importing svg
-    decorationsItem?.children.at(0)?.remove();
-
-    setDecorations(decorationsToSvg(decorationsItem));
-  };
-
   const handleUnite = (): void => {
     uniteActive();
   };
@@ -260,8 +226,6 @@ export function LevelConstructorPage(): JSX.Element {
   const handleBreak = (): void => {
     breakActive();
   };
-
-  console.log(decorations);
 
   return (
     <div>
@@ -363,15 +327,6 @@ export function LevelConstructorPage(): JSX.Element {
                 type="file"
                 onClick={handleUploadFragmentsClick}
                 onChange={handleUploadFragmentsChange}
-              />
-            </div>
-
-            <div>
-              <label htmlFor="upload-decorations">Upload decorations</label>
-              <input
-                id="upload-decorations"
-                type="file"
-                onChange={handleUploadDecorationFile}
               />
             </div>
           </div>

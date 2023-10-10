@@ -8,7 +8,6 @@ export {
   selectHoveredFragmentsIds,
   selectDecorations,
   selectGroups,
-  selectFragmentIdToGroupIdMapping,
   selectIsActiveGroupReady,
   selectIsSingleSelection,
 } from './model';

@@ -127,11 +127,6 @@ export const selectGroups = createSelector(
   }
 );
 
-export const selectFragmentIdToGroupIdMapping = createSelector(
-  selectGrouping,
-  (grouping) => Object.fromEntries(grouping)
-);
-
 export const selectIsSingleSelection = createSelector(
   selectActiveGroupsIds,
   (activeGroupsIds) => activeGroupsIds.length === 1
