@@ -7,7 +7,6 @@ import paper from 'paper';
 import './style.scss';
 import { useSelector } from 'react-redux';
 import {
-  Fragment,
   actions,
   selectFragments,
   selectDecorations,
@@ -17,10 +16,12 @@ import {
 } from 'features/level-constructor';
 import { useActions } from 'shared/hooks';
 import {
+  Decorations,
+  Fragment,
   selectChromaticNumber,
   selectGraphColoring,
 } from 'features/level-constructor/model';
-import { FRAG_DEFAULT_COLOR, getFragmentColor } from './get-fragment-color';
+import { getFragmentColor } from './get-fragment-color';
 
 const CANVAS_ID = 'paper-canvas';
 
@@ -59,56 +60,10 @@ function isPathLike(item: paper.Item): boolean {
   return item.className === 'Path' || item.className === 'CompoundPath';
 }
 
-function importPathsFromSvg(svg: string): paper.PathItem[] {
-  const g = new paper.Group();
-
-  const importedItem = paper.project.importSVG(svg, {
-    applyMatrix: true,
-    expandShapes: true,
-    insert: false,
-  });
-
-  const paths = flattenChildren(importedItem)
-    .filter(isPathLike)
-    .reverse()
-    .map((p) => p.addTo(g));
-
-  g.fitBounds(new paper.Rectangle(0, 0, 100, 100));
-
-  paths.forEach((path) => {
-    path.fillColor = FRAG_DEFAULT_COLOR;
-    path.strokeWidth = 1;
-    path.strokeColor = null;
-  });
-
-  return paths as paper.PathItem[];
-}
-
-function pathToFragment(path: paper.PathItem): Fragment {
-  return {
-    id: path.name,
-    data: path.pathData,
-  };
-}
-
-function svgToDecorations(svg: string): paper.Item {
-  return paper.project.importSVG(svg, {
-    applyMatrix: true,
-    expandShapes: true,
-    insert: false,
-  });
-}
-
-function decorationsToSvg(item: paper.Item): string {
-  const g = new paper.Group();
-  item.addTo(g);
-
-  g.fitBounds(new paper.Rectangle(0, 0, 100, 100));
-
-  return item.exportSVG({ asString: true }) as string;
-}
-
-function parseSvg(svg: string): any {
+function parseSvg(svg: string): {
+  fragments: Fragment[];
+  decorations: Decorations;
+} {
   const g = new paper.Group();
   const fragmentsGroup = new paper.Group().addTo(g);
   const decorationsGroups = new paper.Group().addTo(g);
