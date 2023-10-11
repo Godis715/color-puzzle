@@ -34,6 +34,7 @@ code {
   position: relative;
   padding: 1em;
   border: 1px solid lightgray;
+  user-select: none;
 
   & > * {
     position: absolute;

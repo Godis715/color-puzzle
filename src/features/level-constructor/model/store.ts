@@ -96,7 +96,7 @@ export const levelConstructorSlice = createSlice({
         newGroupId
       );
 
-      state.activeGroupsIds = [newGroupId];
+      state.activeGroupsIds = [];
     },
 
     breakActive: (state) => {
@@ -113,6 +113,8 @@ export const levelConstructorSlice = createSlice({
       state.grouping = breakGroup(grouping, activeGroupId);
 
       state.neighborsGraph = removeGraphNodes(neighborsGraph, [activeGroupId]);
+
+      state.activeGroupsIds = [];
     },
 
     setFragments: (state, action: PayloadAction<Fragment[]>) => {
