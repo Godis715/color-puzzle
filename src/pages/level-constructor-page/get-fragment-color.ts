@@ -24,7 +24,7 @@ function getFragmentColorWhenSelection({
     color.blue -= 0.03;
   }
 
-  if (isActiveNeighbor) {
+  if (isActiveNeighbor && !isActive) {
     color.red -= 0.25;
     color.green -= 0.25;
     color.blue -= 0.15;

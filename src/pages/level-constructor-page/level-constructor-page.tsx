@@ -3,9 +3,15 @@
 import { useEffect, useState } from 'react';
 import SVG from 'react-inlinesvg';
 import paper from 'paper';
-
-import './style.scss';
+import Button from '@mui/material/Button';
+import Box from '@mui/material/Box';
+import Tabs from '@mui/material/Tabs';
+import Tab from '@mui/material/Tab';
+import Grid from '@mui/material/Grid';
 import { useSelector } from 'react-redux';
+
+import { useActions } from 'shared/hooks';
+
 import {
   actions,
   selectFragments,
@@ -14,14 +20,21 @@ import {
   selectIsActiveGroupReady,
   selectIsSingleSelection,
 } from 'features/level-constructor';
-import { useActions } from 'shared/hooks';
 import {
   Decorations,
   Fragment,
+  selectCanBreakActiveGroup,
   selectChromaticNumber,
+  selectFragmentsDtos,
   selectGraphColoring,
+  selectHasSelection,
+  selectIsMultiSelection,
 } from 'features/level-constructor/model';
+
 import { getFragmentColor } from './get-fragment-color';
+
+import './style.scss';
+import { Typography } from '@mui/material';
 
 const CANVAS_ID = 'paper-canvas';
 
@@ -92,7 +105,7 @@ function parseSvg(svg: string): {
       id: path.name,
       data: path.pathData,
     })),
-    decorations: decorations.exportSVG({ asString: true }),
+    decorations: decorations.exportSVG({ asString: true }) as string,
   };
 }
 
@@ -110,7 +123,7 @@ export function LevelConstructorPage(): JSX.Element {
     reset: resetState,
   } = useActions(actions);
 
-  const [shouldShowColoring, setShouldShowColoring] = useState(false);
+  const [tab, setTab] = useState(0);
 
   const fragments = useSelector(selectFragments);
   const decorations = useSelector(selectDecorations);
@@ -119,26 +132,14 @@ export function LevelConstructorPage(): JSX.Element {
   const isSingleSelection = useSelector(selectIsSingleSelection);
   const chromaticNumber = useSelector(selectChromaticNumber);
   const coloring = useSelector(selectGraphColoring);
+  const isMultiSelection = useSelector(selectIsMultiSelection);
+  const hasSelection = useSelector(selectHasSelection);
+  const canBreakActiveGroup = useSelector(selectCanBreakActiveGroup);
+  const fragmentsDtos = useSelector(selectFragmentsDtos);
 
   useEffect(() => {
     paper.setup(CANVAS_ID);
   }, []);
-
-  const createGroupHoverHandler = (hoveredGroupId: string | null) => () =>
-    setHoveredGroupId(hoveredGroupId);
-
-  const createGroupClickHandler = (clickedGroupId: string) => (event: any) => {
-    const isRightButton = event?.event?.button === 2;
-    const isCtrl = event?.ctrlKey ?? event?.modifiers?.control ?? false;
-
-    if (isRightButton) {
-      toggleNeighbor(clickedGroupId);
-    } else if (isCtrl) {
-      toggleActiveGroupId(clickedGroupId);
-    } else {
-      setActiveGroupId(clickedGroupId);
-    }
-  };
 
   const hasActive = groups.some(({ isActive }) => isActive);
 
@@ -182,128 +183,156 @@ export function LevelConstructorPage(): JSX.Element {
     breakActive();
   };
 
-  return (
-    <div>
-      <h2>Level Constructor</h2>
+  const shouldShowColoring = tab === 1;
 
+  return (
+    <Box display="flex" flexDirection="column" alignItems="center">
       <canvas id={CANVAS_ID} style={{ display: 'none' }} />
 
-      <div className="workspace">
-        <div className="viewport">
-          <svg viewBox="0 0 100 100">
-            {groups.map((group) =>
-              group.fragmentIds.map((fragmentId) => {
-                const fragment = fragments.find(({ id }) => id === fragmentId);
+      <Grid
+        container
+        columnSpacing={2}
+        sx={{ maxWidth: '600px', marginTop: 3 }}
+      >
+        <Grid item xs={8}>
+          <Tabs value={tab} centered onChange={(_, index) => setTab(index)}>
+            <Tab label="Constructor" />
+            <Tab label="Coloring" />
+            <Tab label="Try out" />
+          </Tabs>
+        </Grid>
 
-                if (!fragment) return null;
+        <Grid item xs={4} />
 
-                const { red, green, blue } = shouldShowColoring
-                  ? new paper.Color(coloring[group.id])
-                  : getFragmentColor({
-                      isActive: group.isActive,
-                      isHovered: group.isHovered,
-                      isActiveNeighbor: group.isActiveNeighbor,
-                      isReady: group.isReady,
-                      hasActive,
-                    });
-
-                return (
-                  <path
-                    d={fragment.data}
-                    key={group.id}
-                    fill={`rgb(${256 * red},${256 * green},${256 * blue})`}
-                    onMouseEnter={createGroupHoverHandler(group.id)}
-                    onMouseLeave={createGroupHoverHandler(null)}
-                    onClick={createGroupClickHandler(group.id)}
-                  />
-                );
-              })
-            )}
-          </svg>
-
-          {decorations && (
-            /** @ts-ignore */
-            <SVG
-              src={`<svg>${decorations}</svg>`}
-              style={{ pointerEvents: 'none' }}
-              viewBox="0 0 100 100"
-            />
-          )}
-        </div>
-
-        <div>
-          <div>Chromatic number: {chromaticNumber}</div>
-          <div>Groups: {groups.length}</div>
-
-          <div>
-            <div>
-              <input
-                id="show-coloring-checkbox"
-                type="checkbox"
-                checked={shouldShowColoring}
-                onChange={(ev) => setShouldShowColoring(ev.target.checked)}
-              />
-              <label htmlFor="show-coloring-checkbox">Show coloring</label>
-            </div>
-
-            <div>
-              <button type="button" onClick={handleUnite}>
-                Unite
-              </button>
-
-              <button type="button" onClick={handleBreak}>
-                Break
-              </button>
-            </div>
-          </div>
-
-          <div>
-            <button
-              type="button"
-              style={{ marginTop: '3em' }}
-              disabled={!isSingleSelection}
-              onClick={() => {
-                toggleIsActiveGroupReady();
-
-                if (!isActiveGroupReady) {
-                  setActiveGroupId(null);
-                }
-              }}
-            >
-              {isActiveGroupReady ? 'Mark as NOT ready' : 'Mark as ready'}
-            </button>
-          </div>
-
-          <div style={{ marginTop: '5em' }}>
-            <div>
-              <label htmlFor="upload-fragments">Upload fragments</label>
+        <Grid item xs={8}>
+          <Box display="flex" justifyContent="center" sx={{ marginTop: 3 }}>
+            <Button component="label">
+              Upload fragments
               <input
                 id="upload-fragments"
                 type="file"
                 onClick={handleUploadFragmentsClick}
                 onChange={handleUploadFragmentsChange}
+                hidden
               />
-            </div>
-          </div>
+            </Button>
 
-          <div>
-            <button
-              type="button"
+            <Button
+              color="warning"
               onClick={() => {
                 const isConfirmed = confirm(
                   'Current progress will be deleted. Continue?'
                 );
 
-                if (isConfirmed) {
-                  resetState();
-                }
+                if (isConfirmed) resetState();
               }}
             >
               Reset
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
+            </Button>
+          </Box>
+        </Grid>
+
+        <Grid item xs={4} />
+
+        <Grid item xs={8}>
+          <Box display="flex" flexDirection="column" alignItems="center">
+            <div className="viewport">
+              <svg
+                viewBox="0 0 100 100"
+                onContextMenu={(ev) => ev.preventDefault()}
+              >
+                {fragmentsDtos.map((fragment) => {
+                  const { red, green, blue } = shouldShowColoring
+                    ? new paper.Color(coloring[fragment.groupId])
+                    : getFragmentColor({
+                        isActive: fragment.isActive,
+                        isHovered: fragment.isHovered,
+                        isActiveNeighbor: fragment.isActiveNeighbor,
+                        isReady: fragment.isReady,
+                        hasActive,
+                      });
+
+                  return (
+                    <path
+                      d={fragment.data}
+                      key={fragment.id}
+                      fill={`rgb(${256 * red},${256 * green},${256 * blue})`}
+                      onMouseEnter={() => setHoveredGroupId(fragment.groupId)}
+                      onMouseLeave={() => setHoveredGroupId(null)}
+                      onContextMenu={() => toggleNeighbor(fragment.groupId)}
+                      onClick={(event) => {
+                        if (event.ctrlKey) {
+                          toggleActiveGroupId(fragment.groupId);
+                        } else {
+                          setActiveGroupId(fragment.groupId);
+                        }
+                      }}
+                    />
+                  );
+                })}
+              </svg>
+
+              {decorations && (
+                /** @ts-ignore */
+                <SVG
+                  src={`<svg>${decorations}</svg>`}
+                  style={{ pointerEvents: 'none' }}
+                  viewBox="0 0 100 100"
+                />
+              )}
+            </div>
+
+            <div>
+              {isSingleSelection && isActiveGroupReady && (
+                <Button
+                  sx={{ marginRight: 1 }}
+                  variant="outlined"
+                  onClick={() => toggleIsActiveGroupReady()}
+                >
+                  Mark as NOT ready
+                </Button>
+              )}
+
+              {isSingleSelection && !isActiveGroupReady && (
+                <Button
+                  sx={{ marginRight: 1 }}
+                  variant="contained"
+                  onClick={() => {
+                    toggleIsActiveGroupReady();
+                    setActiveGroupId(null);
+                  }}
+                >
+                  Mark as ready
+                </Button>
+              )}
+
+              {isMultiSelection && (
+                <Button
+                  sx={{ marginRight: 1 }}
+                  onClick={handleUnite}
+                  variant="contained"
+                >
+                  Unite
+                </Button>
+              )}
+
+              {canBreakActiveGroup && (
+                <Button
+                  sx={{ marginRight: 1 }}
+                  onClick={handleBreak}
+                  variant="outlined"
+                >
+                  Break
+                </Button>
+              )}
+            </div>
+          </Box>
+        </Grid>
+        <Grid item xs={4}>
+          <Typography>Chromatic number: {chromaticNumber}</Typography>
+          <Typography>Groups: {groups.length}</Typography>
+        </Grid>
+      </Grid>
+    </Box>
   );
 }

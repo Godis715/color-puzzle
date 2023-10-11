@@ -90,6 +90,22 @@ export const selectIsActiveGroupReady = createSelector(
   }
 );
 
+export const selectCanBreakActiveGroup = createSelector(
+  selectActiveGroupsIds,
+  selectGrouping,
+  (activeGroupsIds, grouping) => {
+    const isSingleSelect = activeGroupsIds.length === 1;
+
+    if (!isSingleSelect) return false;
+
+    const groupId = activeGroupsIds[0];
+
+    const fragments = grouping.filter(([, id]) => id === groupId);
+
+    return fragments.length > 1;
+  }
+);
+
 export const selectGroups = createSelector(
   selectGrouping,
   selectActiveGroupsIds,
@@ -127,9 +143,60 @@ export const selectGroups = createSelector(
   }
 );
 
+export const selectFragmentsDtos = createSelector(
+  selectFragments,
+  selectGrouping,
+  selectActiveGroupsIds,
+  selectHoveredGroupId,
+  selectNeighborsGraph,
+  selectReadyGroups,
+  (
+    fragments,
+    grouping,
+    activeGroupsIds,
+    hoveredGroupId,
+    neighborsGraph,
+    readyGroups
+  ) => {
+    const mapFragmentIdToGroupId = Object.fromEntries(grouping);
+
+    const mapGroupIdToNeighborsIds = getAdjacencyList(neighborsGraph);
+
+    const neighborGroups = getGraphNodeNeighbors(
+      neighborsGraph,
+      activeGroupsIds
+    );
+
+    return fragments.map((fragment) => {
+      const groupId = mapFragmentIdToGroupId[fragment.id];
+
+      return {
+        groupId,
+        id: fragment.id,
+        data: fragment.data,
+        isActive: activeGroupsIds.includes(groupId),
+        isHovered: hoveredGroupId === groupId,
+        neighbors: mapGroupIdToNeighborsIds[groupId] ?? [],
+        isReady: readyGroups.includes(groupId),
+        isActiveNeighbor: neighborGroups.includes(groupId),
+      };
+    });
+  }
+);
+
 export const selectIsSingleSelection = createSelector(
   selectActiveGroupsIds,
   (activeGroupsIds) => activeGroupsIds.length === 1
+);
+
+export const selectIsMultiSelection = createSelector(
+  selectActiveGroupsIds,
+  (activeGroupsIds) => activeGroupsIds.length > 1
+);
+
+export const selectHasSelection = createSelector(
+  selectActiveGroupsIds,
+  (activeGroupsIds) => activeGroupsIds.length > 0
 );
 
 export const selectGraphColoringRaw = createSelector(

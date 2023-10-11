@@ -10,6 +10,10 @@ export {
   selectGroups,
   selectIsActiveGroupReady,
   selectIsSingleSelection,
+  selectIsMultiSelection,
+  selectHasSelection,
+  selectCanBreakActiveGroup,
+  selectFragmentsDtos,
 } from './model';
 
 export type { Fragment } from './model';
