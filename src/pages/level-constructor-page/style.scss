@@ -1,26 +1,44 @@
-canvas[data-paper-resize="true"] {
-  width: 100%;
-  height: 100%;
-  display: block;
+code {
+  display: inline-block;
+  padding: 0 4px;
+  color: var(--muidocs-palette-text-primary, #1C2025);
+  background-color: var(--muidocs-palette-grey-50, #F3F6F9);
+  border: 1px solid;
+  border-color: var(--muidocs-palette-grey-200, #DAE2ED);
+  border-radius: 5px;
+  font-size: 0.8125rem;
+  direction: ltr;
 }
 
-.canvas-container {
-  max-width: 400px;
-  width: 100%;
-  height: 400px;
-  padding: 16px;
-  // border: 1px solid gray;
+.selected-fragment {
+  color: white;
+  background-color: rgb(108.92549019607844,134.52549019607844,236.92549019607844);
+  border: none;
+}
+
+.neighbors {
+  color: white;
+  background-color: rgb(143, 143, 172);
+  border: none;
+}
+
+.ready-fragment {
+  background-color: rgb(224, 237, 224);
+  border-color: rgb(205, 220, 205);
 }
 
 .viewport {
   display: block;
-  width: 400px;
-  height: 400px;
+  width: calc(100% - 2em);
+  min-height: 400px;
   position: relative;
+  padding: 1em;
+  border: 1px solid lightgray;
 
   & > * {
     position: absolute;
     height: 100%;
+    width: calc(100% - 2em);
     margin: auto;
     top: 0;
     left: 0;

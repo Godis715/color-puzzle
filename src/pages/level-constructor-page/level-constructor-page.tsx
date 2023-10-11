@@ -1,6 +1,7 @@
 /* eslint-disable jsx-a11y/no-noninteractive-element-interactions */
 /* eslint-disable jsx-a11y/click-events-have-key-events */
 import { useEffect, useState } from 'react';
+import { useSelector } from 'react-redux';
 import SVG from 'react-inlinesvg';
 import paper from 'paper';
 import Button from '@mui/material/Button';
@@ -8,7 +9,7 @@ import Box from '@mui/material/Box';
 import Tabs from '@mui/material/Tabs';
 import Tab from '@mui/material/Tab';
 import Grid from '@mui/material/Grid';
-import { useSelector } from 'react-redux';
+import Typography from '@mui/material/Typography';
 
 import { useActions } from 'shared/hooks';
 
@@ -34,7 +35,6 @@ import {
 import { getFragmentColor } from './get-fragment-color';
 
 import './style.scss';
-import { Typography } from '@mui/material';
 
 const CANVAS_ID = 'paper-canvas';
 
@@ -183,6 +183,12 @@ export function LevelConstructorPage(): JSX.Element {
     breakActive();
   };
 
+  const handleReset = (): void => {
+    const isConfirmed = confirm('Current progress will be deleted. Continue?');
+
+    if (isConfirmed) resetState();
+  };
+
   const shouldShowColoring = tab === 1;
 
   return (
@@ -217,16 +223,7 @@ export function LevelConstructorPage(): JSX.Element {
               />
             </Button>
 
-            <Button
-              color="warning"
-              onClick={() => {
-                const isConfirmed = confirm(
-                  'Current progress will be deleted. Continue?'
-                );
-
-                if (isConfirmed) resetState();
-              }}
-            >
+            <Button color="warning" onClick={handleReset}>
               Reset
             </Button>
           </Box>
@@ -235,7 +232,12 @@ export function LevelConstructorPage(): JSX.Element {
         <Grid item xs={4} />
 
         <Grid item xs={8}>
-          <Box display="flex" flexDirection="column" alignItems="center">
+          <Box
+            display="flex"
+            flexDirection="column"
+            alignItems="center"
+            sx={{ userSelect: 'none' }}
+          >
             <div className="viewport">
               <svg
                 viewBox="0 0 100 100"
@@ -329,8 +331,57 @@ export function LevelConstructorPage(): JSX.Element {
           </Box>
         </Grid>
         <Grid item xs={4}>
-          <Typography>Chromatic number: {chromaticNumber}</Typography>
-          <Typography>Groups: {groups.length}</Typography>
+          <Typography sx={{ marginBottom: 2 }}>
+            Fragments: {groups.length}
+          </Typography>
+          {isSingleSelection && (
+            <Typography sx={{ marginBottom: 2 }}>
+              Selected 1 fragment
+            </Typography>
+          )}
+
+          {isMultiSelection && (
+            <Typography sx={{ marginBottom: 2 }}>
+              Selected multiple fragments
+            </Typography>
+          )}
+
+          {!hasSelection && (
+            <Typography>
+              Select fragment by <code>left click</code>
+            </Typography>
+          )}
+
+          {!hasSelection && (
+            <Typography sx={{ marginTop: 2 }}>
+              Use <code>CTRL</code> to select multiple fragments
+            </Typography>
+          )}
+
+          {isSingleSelection && !isActiveGroupReady && (
+            <Typography>
+              Specify which fragments are{' '}
+              <code className="neighbors">neighbors</code> to{' '}
+              <code className="selected-fragment">selected</code> one by{' '}
+              <code>right click</code>
+            </Typography>
+          )}
+
+          {isMultiSelection && (
+            <Typography>You can unite selected fragments</Typography>
+          )}
+
+          {isSingleSelection && !isActiveGroupReady && (
+            <Typography sx={{ marginTop: 2 }}>
+              When done, mark fragment as ready
+            </Typography>
+          )}
+
+          {hasSelection && (
+            <Typography sx={{ marginTop: 2 }}>
+              Use <code>ESC</code> to drop selection
+            </Typography>
+          )}
         </Grid>
       </Grid>
     </Box>
