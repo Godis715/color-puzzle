@@ -4,7 +4,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { useSelector } from 'react-redux';
 import Box from '@mui/material/Box';
 import Grid from '@mui/material/Grid';
-import { Typography } from '@mui/material';
+import Button from '@mui/material/Button';
+import Typography from '@mui/material/Typography';
 import paper from 'paper';
 
 import {
@@ -13,12 +14,27 @@ import {
   selectGroups,
 } from 'src/features/level-constructor';
 import {
-  colors,
   selectChromaticNumber,
   selectFragmentsDtos,
+  selectGraphColoringRaw,
 } from 'src/features/level-constructor/model';
 
 import { LevelRenderer } from './level-renderer';
+
+export const colors = [
+  '#ff99cc',
+  '#ccff99',
+  '#99ccff',
+  '#ffcc99',
+  '#cc99ff',
+  '#99ffcc',
+  '#ffffcc',
+  '#ffcccc',
+  '#ccccff',
+  '#ccffff',
+  '#ccffcc',
+  '#ffccff',
+];
 
 export function LevelPreviewTab(): JSX.Element {
   const [coloring, setColoring] = useState<Record<string, number>>({});
@@ -29,10 +45,13 @@ export function LevelPreviewTab(): JSX.Element {
   const groups = useSelector(selectGroups);
   const fragmentsDtos = useSelector(selectFragmentsDtos);
   const colorsNum = useSelector(selectChromaticNumber);
+  const solutionColoring = useSelector(selectGraphColoringRaw);
 
-  useEffect(() => {
+  const reset = (): void => {
     setColoring(Object.fromEntries(groups.map(({ id }) => [id, -1])));
-  }, [groups]);
+  };
+
+  useEffect(reset, [groups]);
 
   const errorGroups = useMemo(
     () =>
@@ -112,6 +131,16 @@ export function LevelPreviewTab(): JSX.Element {
         <Typography>Total colors: {colorsNum}</Typography>
         <Typography>Total fragments: {groups.length}</Typography>
         <Typography>Errors count: {errorGroups.length}</Typography>
+
+        <Button
+          variant="contained"
+          onClick={() => setColoring({ ...solutionColoring })}
+        >
+          Show solution
+        </Button>
+        <Button variant="outlined" color="warning" onClick={reset}>
+          Reset
+        </Button>
       </Grid>
     </>
   );

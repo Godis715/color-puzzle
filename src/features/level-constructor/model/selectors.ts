@@ -230,32 +230,6 @@ export const selectGraphColoringRaw = createSelector(
   }
 );
 
-export const colors = [
-  '#ff99cc',
-  '#ccff99',
-  '#99ccff',
-  '#ffcc99',
-  '#cc99ff',
-  '#99ffcc',
-  '#ffffcc',
-  '#ffcccc',
-  '#ccccff',
-  '#ccffff',
-  '#ccffcc',
-  '#ffccff',
-];
-
-export const selectGraphColoring = createSelector(
-  selectGraphColoringRaw,
-  (coloring) =>
-    Object.fromEntries(
-      Object.entries(coloring).map(([gorupId, color]) => [
-        gorupId,
-        colors[color],
-      ])
-    )
-);
-
 export const selectChromaticNumber = createSelector(
   selectGraphColoringRaw,
   (coloring) => Math.max(-1, ...Object.values(coloring)) + 1
