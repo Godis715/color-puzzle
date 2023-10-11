@@ -8,8 +8,7 @@ type Props = {
   decorations: Decorations | null;
   getFragmentColor: (id: string) => string;
   onFragmentHover: (id: string | null) => void;
-  onFragmentRightClick: (id: string) => void;
-  onFragmentClick: (id: string, withCtrl: boolean) => void;
+  onFragmentClick: (id: string, ev: React.MouseEvent) => void;
   onFragmentContextMenu: (
     id: string,
     position: { top: number; left: number }
@@ -23,7 +22,6 @@ export function LevelRenderer(props: Props): JSX.Element {
     getFragmentColor,
     onFragmentHover,
     onFragmentClick,
-    onFragmentRightClick,
     onFragmentContextMenu,
   } = props;
 
@@ -32,12 +30,13 @@ export function LevelRenderer(props: Props): JSX.Element {
       <svg viewBox="0 0 100 100">
         {fragments.map((fragment) => (
           <path
+            className="fragment"
             d={fragment.data}
             key={fragment.id}
             fill={getFragmentColor(fragment.id)}
             onMouseEnter={() => onFragmentHover(fragment.id)}
             onMouseLeave={() => onFragmentHover(null)}
-            onClick={(event) => onFragmentClick(fragment.id, event.ctrlKey)}
+            onClick={(event) => onFragmentClick(fragment.id, event)}
             onContextMenu={(ev) => {
               ev.preventDefault();
 

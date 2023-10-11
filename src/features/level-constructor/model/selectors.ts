@@ -229,7 +229,7 @@ export const selectGraphColoringRaw = createSelector(
   }
 );
 
-const colors = [
+export const colors = [
   '#ff99cc',
   '#ccff99',
   '#99ccff',

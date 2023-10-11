@@ -2,14 +2,12 @@
 /* eslint-disable jsx-a11y/click-events-have-key-events */
 import { useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
-import SVG from 'react-inlinesvg';
 import paper from 'paper';
 import Button from '@mui/material/Button';
 import Box from '@mui/material/Box';
 import Tabs from '@mui/material/Tabs';
 import Tab from '@mui/material/Tab';
 import Grid from '@mui/material/Grid';
-import Typography from '@mui/material/Typography';
 
 import { useActions } from 'shared/hooks';
 
@@ -18,27 +16,20 @@ import {
   selectFragments,
   selectDecorations,
   selectGroups,
-  selectIsActiveGroupReady,
-  selectIsSingleSelection,
 } from 'features/level-constructor';
 import {
   Decorations,
   Fragment,
-  selectCanBreakActiveGroup,
-  selectChromaticNumber,
   selectFragmentsDtos,
-  selectGraphColoring,
-  selectHasSelection,
-  selectIsMultiSelection,
 } from 'features/level-constructor/model';
 
 import { getFragmentColor } from './get-fragment-color';
 
 import './style.scss';
 import { LevelRenderer } from './level-renderer';
-import Menu from '@mui/material/Menu';
-import MenuItem from '@mui/material/MenuItem';
 import { ContextMenu } from './context-menu';
+import { InfoPanel } from './info-panel';
+import { LevelPreviewTab } from './level-preview-tab';
 
 const CANVAS_ID = 'paper-canvas';
 
@@ -111,11 +102,6 @@ function parseSvg(svg: string): {
   };
 }
 
-type ContextMenu = {
-  mouseX: number;
-  mouseY: number;
-};
-
 export function LevelConstructorPage(): JSX.Element {
   const {
     setActiveGroupId,
@@ -124,6 +110,7 @@ export function LevelConstructorPage(): JSX.Element {
     setFragments,
     setDecorations,
     setHoveredGroupId,
+    uniteActive,
     reset: resetState,
   } = useActions(actions);
 
@@ -136,11 +123,24 @@ export function LevelConstructorPage(): JSX.Element {
   const fragments = useSelector(selectFragments);
   const decorations = useSelector(selectDecorations);
   const groups = useSelector(selectGroups);
-  const isActiveGroupReady = useSelector(selectIsActiveGroupReady);
-  const isSingleSelection = useSelector(selectIsSingleSelection);
-  const isMultiSelection = useSelector(selectIsMultiSelection);
-  const hasSelection = useSelector(selectHasSelection);
   const fragmentsDtos = useSelector(selectFragmentsDtos);
+
+  useEffect(() => {
+    const listener = (ev: KeyboardEvent): void => {
+      if (ev.key === 'Escape') setActiveGroupId(null);
+      else if (ev.key === 'g' && ev.ctrlKey) {
+        ev.preventDefault();
+        ev.stopPropagation();
+        uniteActive();
+      }
+    };
+
+    document.addEventListener('keydown', listener);
+
+    return () => {
+      document.removeEventListener('keydown', listener);
+    };
+  }, []);
 
   const getGroupId = (fragmentId: string | null) =>
     fragmentsDtos.find(({ id }) => fragmentId === id)?.groupId ?? null;
@@ -196,7 +196,7 @@ export function LevelConstructorPage(): JSX.Element {
 
     const { red, green, blue } = getFragmentColor({
       isActive: fragment.isActive,
-      isHovered: fragment.isHovered,
+      isHovered: fragment.isHovered || fragment.groupId === contextMenu?.id,
       isActiveNeighbor: fragment.isActiveNeighbor,
       isReady: fragment.isReady,
       hasActive,
@@ -223,106 +223,62 @@ export function LevelConstructorPage(): JSX.Element {
 
         <Grid item xs={4} />
 
-        <Grid item xs={8}>
-          <Box display="flex" flexDirection="column" alignItems="center">
-            <ContextMenu
-              groupId={contextMenu?.id ?? ''}
-              anchorPosition={contextMenu?.position ?? null}
-              onClose={() => setContextMenu(null)}
-            />
-            <LevelRenderer
-              fragments={fragments}
-              decorations={decorations}
-              onFragmentHover={(id) => setHoveredGroupId(getGroupId(id))}
-              onFragmentRightClick={(id) =>
-                toggleNeighbor(getGroupId(id) ?? '')
-              }
-              onFragmentClick={(id, withCtrl) => {
-                if (withCtrl) toggleActiveGroupId(getGroupId(id) ?? '');
-                else setActiveGroupId(getGroupId(id));
-              }}
-              onFragmentContextMenu={(id, position) => {
-                setContextMenu({ id: getGroupId(id) ?? '', position });
-              }}
-              getFragmentColor={getFragmentColorById}
-            />
-
-            <Box display="flex" justifyContent="center" flexWrap="wrap">
-              <Button component="label">
-                Upload fragments
-                <input
-                  id="upload-fragments"
-                  type="file"
-                  onClick={handleUploadFragmentsClick}
-                  onChange={handleUploadFragmentsChange}
-                  hidden
+        {tab === 0 && (
+          <>
+            <Grid item xs={8}>
+              <Box display="flex" flexDirection="column" alignItems="center">
+                <ContextMenu
+                  groupId={contextMenu?.id ?? ''}
+                  anchorPosition={contextMenu?.position ?? null}
+                  onClose={() => setContextMenu(null)}
                 />
-              </Button>
 
-              <Button color="warning" onClick={handleReset}>
-                Reset
-              </Button>
-            </Box>
-          </Box>
-        </Grid>
-        <Grid item xs={4}>
-          <Typography sx={{ marginBottom: 2 }}>
-            Fragments: {groups.length}
-          </Typography>
-          {isSingleSelection && (
-            <Typography sx={{ marginBottom: 2 }}>
-              Selected 1 fragment
-            </Typography>
-          )}
+                <LevelRenderer
+                  fragments={fragments}
+                  decorations={decorations}
+                  onFragmentHover={(id) => setHoveredGroupId(getGroupId(id))}
+                  onFragmentClick={(id, event) => {
+                    if (event.ctrlKey)
+                      toggleActiveGroupId(getGroupId(id) ?? '');
+                    else if (event.altKey) toggleNeighbor(getGroupId(id) ?? '');
+                    else setActiveGroupId(getGroupId(id));
+                  }}
+                  onFragmentContextMenu={(id, position) => {
+                    setContextMenu({ id: getGroupId(id) ?? '', position });
+                  }}
+                  getFragmentColor={getFragmentColorById}
+                />
 
-          {isMultiSelection && (
-            <Typography sx={{ marginBottom: 2 }}>
-              Selected multiple fragments
-            </Typography>
-          )}
+                <Box
+                  display="flex"
+                  justifyContent="center"
+                  flexWrap="wrap"
+                  sx={{ marginTop: 2 }}
+                >
+                  <Button component="label">
+                    Upload fragments
+                    <input
+                      id="upload-fragments"
+                      type="file"
+                      onClick={handleUploadFragmentsClick}
+                      onChange={handleUploadFragmentsChange}
+                      hidden
+                    />
+                  </Button>
 
-          {!hasSelection && (
-            <Typography>
-              <code>Left Click</code> &mdash; select fragment
-            </Typography>
-          )}
+                  <Button color="warning" onClick={handleReset}>
+                    Reset
+                  </Button>
+                </Box>
+              </Box>
+            </Grid>
+            <Grid item xs={4}>
+              <InfoPanel />
+            </Grid>
+          </>
+        )}
 
-          {!hasSelection && (
-            <Typography sx={{ marginTop: 2 }}>
-              <code>CTRL+Left Click</code> &mdash; select multiple fragments
-            </Typography>
-          )}
-
-          {!hasSelection && (
-            <Typography sx={{ marginTop: 2 }}>
-              <code>Right Click</code> &mdash; context menu
-            </Typography>
-          )}
-
-          {isSingleSelection && !isActiveGroupReady && (
-            <Typography>
-              <code>ALT+Left Click</code> &mdash; mark fragment as{' '}
-              <code className="neighbors">neighbor</code> of{' '}
-              <code className="selected-fragment">selected</code> fragment
-            </Typography>
-          )}
-
-          {isMultiSelection && (
-            <Typography>You can unite selected fragments</Typography>
-          )}
-
-          {isSingleSelection && !isActiveGroupReady && (
-            <Typography sx={{ marginTop: 2 }}>
-              When done, mark fragment as ready
-            </Typography>
-          )}
-
-          {hasSelection && (
-            <Typography sx={{ marginTop: 2 }}>
-              <code>ESC</code> &mdash; drop selection
-            </Typography>
-          )}
-        </Grid>
+        {tab === 1 && <LevelPreviewTab />}
       </Grid>
     </Box>
   );

@@ -161,6 +161,8 @@ export const levelConstructorSlice = createSlice({
       const groupId = activeGroupsIds[0];
 
       state.readyGroups = toggleArrayElement(readyGroups, groupId);
+
+      state.activeGroupsIds = [];
     },
 
     reset: (state) => Object.assign(state, initialState),

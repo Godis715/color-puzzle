@@ -50,10 +50,10 @@ export function ContextMenu(props: Props): JSX.Element {
     isSingleSelection && group.isActiveNeighbor;
 
   const shouldShowMarkAsReady =
-    isSingleSelection && !group.isReady && group.isActive;
+    (!hasSelection || (isSingleSelection && group.isActive)) && !group.isReady;
 
   const shouldShowMarkAsNotReady =
-    isSingleSelection && group.isReady && group.isActive;
+    (!hasSelection || (isSingleSelection && group.isActive)) && group.isReady;
 
   const shouldShowUnite = isMultiSelection && group.isActive;
 
@@ -63,6 +63,7 @@ export function ContextMenu(props: Props): JSX.Element {
     <Menu
       open={anchorPosition !== null}
       onClose={handleClose}
+      onClick={handleClose}
       anchorReference="anchorPosition"
       anchorPosition={anchorPosition ?? undefined}
       onContextMenu={(ev) => {
@@ -73,7 +74,6 @@ export function ContextMenu(props: Props): JSX.Element {
       {shouldShowAddToSelection && (
         <MenuItem
           onClick={() => {
-            handleClose();
             toggleActiveGroupId(groupId);
           }}
         >
@@ -84,7 +84,6 @@ export function ContextMenu(props: Props): JSX.Element {
       {shouldShowDeselect && (
         <MenuItem
           onClick={() => {
-            handleClose();
             toggleActiveGroupId(groupId);
           }}
         >
@@ -95,7 +94,6 @@ export function ContextMenu(props: Props): JSX.Element {
       {shouldShowBreak && (
         <MenuItem
           onClick={() => {
-            handleClose();
             breakActive();
           }}
         >
@@ -106,7 +104,6 @@ export function ContextMenu(props: Props): JSX.Element {
       {shouldShowMarkAsNeighbor && (
         <MenuItem
           onClick={() => {
-            handleClose();
             toggleNeighbor(groupId);
           }}
         >
@@ -117,7 +114,6 @@ export function ContextMenu(props: Props): JSX.Element {
       {shouldShowMarkAsNotNeighbor && (
         <MenuItem
           onClick={() => {
-            handleClose();
             toggleNeighbor(groupId);
           }}
         >
@@ -128,7 +124,6 @@ export function ContextMenu(props: Props): JSX.Element {
       {shouldShowMarkAsReady && (
         <MenuItem
           onClick={() => {
-            handleClose();
             toggleIsActiveGroupReady();
           }}
         >
@@ -139,7 +134,6 @@ export function ContextMenu(props: Props): JSX.Element {
       {shouldShowMarkAsNotReady && (
         <MenuItem
           onClick={() => {
-            handleClose();
             toggleIsActiveGroupReady();
           }}
         >
@@ -150,7 +144,6 @@ export function ContextMenu(props: Props): JSX.Element {
       {shouldShowUnite && (
         <MenuItem
           onClick={() => {
-            handleClose();
             uniteActive();
           }}
         >
