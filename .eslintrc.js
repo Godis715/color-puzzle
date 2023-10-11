@@ -43,5 +43,30 @@ module.exports = {
         },
       },
     ],
+    'import/order': [
+      'error',
+      {
+        'newlines-between': 'always',
+        groups: [
+          'builtin',
+          'external',
+          'internal',
+          ['index', 'sibling', 'parent'],
+        ],
+        pathGroups: [
+          {
+            pattern: 'src/**',
+            group: 'internal',
+            position: 'before',
+          },
+          {
+            pattern: '*.scss',
+            group: 'internal',
+            position: 'after',
+          },
+        ],
+        pathGroupsExcludedImportTypes: [],
+      },
+    ],
   },
 };

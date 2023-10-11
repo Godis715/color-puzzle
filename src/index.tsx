@@ -4,8 +4,8 @@ import ReactDOM from 'react-dom/client';
 import { persistStore } from 'redux-persist';
 import { PersistGate } from 'redux-persist/integration/react';
 
-import { App } from 'app';
-import { store } from 'store';
+import { App } from 'src/app';
+import { store } from 'src/store';
 
 import reportWebVitals from './reportWebVitals';
 

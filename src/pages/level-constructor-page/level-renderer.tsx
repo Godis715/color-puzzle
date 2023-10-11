@@ -1,7 +1,7 @@
 import SVG from 'react-inlinesvg';
 
-import { Fragment } from 'features/level-constructor';
-import { Decorations } from 'features/level-constructor/model';
+import { Fragment } from 'src/features/level-constructor';
+import { Decorations } from 'src/features/level-constructor/model';
 
 type Props = {
   fragments: Fragment[];

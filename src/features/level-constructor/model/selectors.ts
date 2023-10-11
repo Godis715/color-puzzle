@@ -1,5 +1,6 @@
 import { createSelector } from 'reselect';
-import { getGraphColoring } from 'shared/lib/graph-coloring-solver';
+
+import { getGraphColoring } from 'src/shared/lib/graph-coloring-solver';
 
 import { getElementsByGroup } from '../lib/grouping';
 import {

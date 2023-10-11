@@ -9,27 +9,25 @@ import Tabs from '@mui/material/Tabs';
 import Tab from '@mui/material/Tab';
 import Grid from '@mui/material/Grid';
 
-import { useActions } from 'shared/hooks';
-
+import { useActions } from 'src/shared/hooks';
 import {
   actions,
   selectFragments,
   selectDecorations,
   selectGroups,
-} from 'features/level-constructor';
+} from 'src/features/level-constructor';
 import {
   Decorations,
   Fragment,
   selectFragmentsDtos,
-} from 'features/level-constructor/model';
+} from 'src/features/level-constructor/model';
 
 import { getFragmentColor } from './get-fragment-color';
-
-import './style.scss';
 import { LevelRenderer } from './level-renderer';
 import { ContextMenu } from './context-menu';
 import { InfoPanel } from './info-panel';
 import { LevelPreviewTab } from './level-preview-tab';
+import './style.scss';
 
 const CANVAS_ID = 'paper-canvas';
 

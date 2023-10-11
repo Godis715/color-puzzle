@@ -11,12 +11,12 @@ import {
   selectFragments,
   selectDecorations,
   selectGroups,
-} from 'features/level-constructor';
+} from 'src/features/level-constructor';
 import {
   colors,
   selectChromaticNumber,
   selectFragmentsDtos,
-} from 'features/level-constructor/model';
+} from 'src/features/level-constructor/model';
 
 import { LevelRenderer } from './level-renderer';
 

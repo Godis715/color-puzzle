@@ -1,16 +1,16 @@
 import { useSelector } from 'react-redux';
 import Typography from '@mui/material/Typography';
+import Stack from '@mui/material/Stack';
 
 import {
   selectGroups,
   selectIsActiveGroupReady,
   selectIsSingleSelection,
-} from 'features/level-constructor';
+} from 'src/features/level-constructor';
 import {
   selectHasSelection,
   selectIsMultiSelection,
-} from 'features/level-constructor/model';
-import Stack from '@mui/material/Stack';
+} from 'src/features/level-constructor/model';
 
 export function InfoPanel(): JSX.Element {
   const groups = useSelector(selectGroups);

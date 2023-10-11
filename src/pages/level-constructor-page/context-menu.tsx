@@ -1,14 +1,15 @@
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
+import { useSelector } from 'react-redux';
+
 import {
   actions,
   selectGroups,
   selectHasSelection,
   selectIsMultiSelection,
   selectIsSingleSelection,
-} from 'features/level-constructor/model';
-import { useSelector } from 'react-redux';
-import { useActions } from 'shared/hooks';
+} from 'src/features/level-constructor/model';
+import { useActions } from 'src/shared/hooks';
 
 type Props = {
   groupId: string;
