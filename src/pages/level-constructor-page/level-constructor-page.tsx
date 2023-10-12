@@ -8,8 +8,13 @@ import { LevelPreviewTab } from './level-preview-tab';
 import { LevelEditorTab } from './level-editor-tab';
 import './style.scss';
 
+enum TabName {
+  Editor = 'editor',
+  Preview = 'preview',
+}
+
 export function LevelConstructorPage(): JSX.Element {
-  const [tab, setTab] = useState(0);
+  const [tab, setTab] = useState<TabName>(TabName.Editor);
 
   return (
     <Box display="flex" flexDirection="column" alignItems="center">
@@ -19,17 +24,21 @@ export function LevelConstructorPage(): JSX.Element {
         sx={{ maxWidth: '600px', marginTop: 3 }}
       >
         <Grid item xs={8}>
-          <Tabs value={tab} centered onChange={(_, index) => setTab(index)}>
-            <Tab label="Editor" />
-            <Tab label="Preview" />
+          <Tabs
+            value={tab}
+            centered
+            onChange={(_, value: TabName) => setTab(value)}
+          >
+            <Tab label="Editor" value={TabName.Editor} />
+            <Tab label="Preview" value={TabName.Preview} />
           </Tabs>
         </Grid>
 
         <Grid item xs={4} />
 
-        {tab === 0 && <LevelEditorTab />}
+        {tab === TabName.Editor && <LevelEditorTab />}
 
-        {tab === 1 && <LevelPreviewTab />}
+        {tab === TabName.Preview && <LevelPreviewTab />}
       </Grid>
     </Box>
   );

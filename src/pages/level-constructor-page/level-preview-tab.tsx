@@ -20,7 +20,9 @@ import {
 
 import { LevelRenderer } from './level-renderer';
 
-export const colors = [
+const DEFAULT_COLOR = '#ededed';
+
+const COLORS = [
   '#ff99cc',
   '#ccff99',
   '#99ccff',
@@ -38,41 +40,40 @@ export const colors = [
 const cnLevelPreviewTab = cn('LevelPreviewTab');
 
 export function LevelPreviewTab(): JSX.Element {
-  const [coloring, setColoring] = useState<Record<string, number>>({});
+  const groups = useSelector(selectGroups);
+  const defaultColoring = Object.fromEntries(groups.map(({ id }) => [id, -1]));
+  const [coloring, setColoring] = useState(defaultColoring);
+
   const [hoveredGroupId, setHoveredGroupId] = useState<string | null>(null);
 
   const fragments = useSelector(selectFragments);
   const decorations = useSelector(selectDecorations);
-  const groups = useSelector(selectGroups);
   const colorsNum = useSelector(selectChromaticNumber);
   const solutionColoring = useSelector(selectGraphColoring);
   const mapFragmentIdToGroupId = useSelector(selectMapFragmentIdToGroupId);
 
-  const reset = (): void => {
-    setColoring(Object.fromEntries(groups.map(({ id }) => [id, -1])));
-  };
+  const maxColor = colorsNum - 1;
 
-  useEffect(reset, [groups]);
+  const getFragmentGroupId = (fragmentId: string) =>
+    mapFragmentIdToGroupId[fragmentId];
+
+  const resetProgress = (): void => setColoring(defaultColoring);
 
   const errorGroups = useMemo(
     () =>
-      groups.filter((group) =>
-        group.neighbors.some(
-          (id) =>
-            coloring[id] !== -1 &&
-            coloring[group.id] !== -1 &&
-            coloring[id] === coloring[group.id]
+      groups.filter(({ id, neighbors }) =>
+        neighbors.some(
+          (neighborId) =>
+            coloring[id] !== -1 && coloring[neighborId] === coloring[id]
         )
       ),
     [coloring, groups]
   );
 
-  const getGroupId = (fragmentId: string) => mapFragmentIdToGroupId[fragmentId];
-
   const getGroupColorById = (groupId: string): string => {
     const colorIdx = coloring[groupId] ?? -1;
 
-    const color = colorIdx === -1 ? 'rgb(237,237,237)' : colors[colorIdx];
+    const color = colorIdx === -1 ? DEFAULT_COLOR : COLORS[colorIdx];
 
     const paperColor = new paper.Color(color);
 
@@ -82,10 +83,29 @@ export function LevelPreviewTab(): JSX.Element {
       paperColor.blue -= 0.03;
     }
 
-    const { red, green, blue } = paperColor;
-
-    return `rgb(${256 * red},${256 * green},${256 * blue})`;
+    return paperColor.toCSS(true);
   };
+
+  const getGroupClassName = (groupId: string): string => {
+    const isError = errorGroups.some(({ id }) => groupId === id);
+    return cnLevelPreviewTab('Fragment', { isError });
+  };
+
+  const handleGroupClick = (groupId: string): void => {
+    const currColor = coloring[groupId];
+    const newColor = currColor === maxColor ? -1 : currColor + 1;
+
+    setColoring({ ...coloring, [groupId]: newColor });
+  };
+
+  const handleGroupRightClick = (groupId: string): void => {
+    const currColor = coloring[groupId];
+    const newColor = currColor === -1 ? maxColor : currColor - 1;
+
+    setColoring({ ...coloring, [groupId]: newColor });
+  };
+
+  const handleShowSolutionClick = (): void => setColoring(solutionColoring);
 
   return (
     <>
@@ -94,38 +114,12 @@ export function LevelPreviewTab(): JSX.Element {
           <LevelRenderer
             fragments={fragments}
             decorations={decorations}
-            getFragmentGroupId={getGroupId}
-            onGroupHover={setHoveredGroupId}
-            getGroupClassName={(groupId) => {
-              const group = groups.find((g) => g.id === groupId);
-
-              if (!group) return '';
-
-              const isError = group.neighbors.some(
-                (nid) =>
-                  coloring[nid] !== -1 &&
-                  coloring[group.id] !== -1 &&
-                  coloring[nid] === coloring[group.id]
-              );
-
-              return cnLevelPreviewTab('Fragment', { isError });
-            }}
-            onGroupClick={(groupId) => {
-              setColoring({
-                ...coloring,
-                [groupId]: ((coloring[groupId] + 2) % (colorsNum + 1)) - 1,
-              });
-            }}
-            onGroupContextMenu={(groupId) => {
-              setColoring({
-                ...coloring,
-                [groupId]:
-                  coloring[groupId] === -1
-                    ? colorsNum - 1
-                    : coloring[groupId] - 1,
-              });
-            }}
+            getFragmentGroupId={getFragmentGroupId}
+            getGroupClassName={getGroupClassName}
             getGroupColor={getGroupColorById}
+            onGroupHover={setHoveredGroupId}
+            onGroupClick={handleGroupClick}
+            onGroupContextMenu={handleGroupRightClick}
           />
         </Box>
       </Grid>
@@ -135,13 +129,11 @@ export function LevelPreviewTab(): JSX.Element {
         <Typography>Total fragments: {groups.length}</Typography>
         <Typography>Errors count: {errorGroups.length}</Typography>
 
-        <Button
-          variant="contained"
-          onClick={() => setColoring({ ...solutionColoring })}
-        >
+        <Button variant="contained" onClick={handleShowSolutionClick}>
           Show solution
         </Button>
-        <Button variant="outlined" color="warning" onClick={reset}>
+
+        <Button variant="outlined" color="warning" onClick={resetProgress}>
           Reset
         </Button>
       </Grid>

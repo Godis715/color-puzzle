@@ -20,19 +20,10 @@ code {
   transition: 140ms;
 }
 
-@keyframes flickering {
-  from {
-    opacity: 1;
-  }
-  to {
-    opacity: 0.5;
-  }
-}
-
 .LevelPreviewTab {
   &-Fragment {
     &_isError {
-      animation: 500ms linear 1s infinite alternate flickering;
+      // Error style
     }
   }
 }

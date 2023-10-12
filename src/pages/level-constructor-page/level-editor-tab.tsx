@@ -21,7 +21,7 @@ import {
 import { getFragmentColor } from './get-fragment-color';
 import { LevelRenderer } from './level-renderer';
 import { ContextMenu } from './context-menu';
-import { InfoPanel } from './info-panel';
+import { EditorInfoPanel } from './editor-info-panel';
 import './style.scss';
 
 const CANVAS_ID = 'paper-canvas';
@@ -186,15 +186,13 @@ export function LevelEditorTab(): JSX.Element {
 
     if (!group) return '';
 
-    const { red, green, blue } = getFragmentColor({
+    return getFragmentColor({
       isActive: group.isActive,
       isHovered: group.isHovered || groupId === contextMenu?.id,
       isActiveNeighbor: group.isActiveNeighbor,
       isReady: group.isReady,
       hasActive,
     });
-
-    return `rgb(${256 * red},${256 * green},${256 * blue})`;
   };
 
   return (
@@ -250,7 +248,7 @@ export function LevelEditorTab(): JSX.Element {
       </Grid>
 
       <Grid item xs={4}>
-        <InfoPanel />
+        <EditorInfoPanel />
       </Grid>
     </>
   );

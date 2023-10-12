@@ -91,7 +91,9 @@ export const selectGroups = createSelector(
         isHovered: hoveredGroupId === groupId,
         neighbors: mapGroupIdToNeighborsIds[groupId] ?? [],
         isReady: readyGroups.includes(groupId),
-        isActiveNeighbor: neighborGroups.includes(groupId),
+        isActiveNeighbor:
+          neighborGroups.includes(groupId) &&
+          !activeGroupsIds.includes(groupId),
       })
     );
   }

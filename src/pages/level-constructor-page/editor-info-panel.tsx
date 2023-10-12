@@ -8,22 +8,44 @@ import {
   selectIsSingleSelection,
   selectHasSelection,
   selectIsMultiSelection,
+  selectActiveGroupsIds,
 } from 'src/features/level-constructor';
 
-export function InfoPanel(): JSX.Element {
+export function EditorInfoPanel(): JSX.Element {
   const groups = useSelector(selectGroups);
   const isActiveGroupReady = useSelector(selectIsActiveGroupReady);
   const isSingleSelection = useSelector(selectIsSingleSelection);
   const isMultiSelection = useSelector(selectIsMultiSelection);
   const hasSelection = useSelector(selectHasSelection);
+  const activeGroupsIds = useSelector(selectActiveGroupsIds);
+
+  const activeNeighborsIds = groups.filter((group) => group.isActiveNeighbor);
 
   return (
     <Stack spacing={2}>
       <Typography>Fragments: {groups.length}</Typography>
 
-      {isSingleSelection && <Typography>Selected 1 fragment</Typography>}
+      {hasSelection && (
+        <Typography>
+          Selected {activeGroupsIds.length}&nbsp;
+          <code className="selected-fragment">fragments</code> with{' '}
+          {activeNeighborsIds.length}{' '}
+          <code className="neighbors">neighbor</code>
+        </Typography>
+      )}
 
-      {isMultiSelection && <Typography>Selected multiple fragments</Typography>}
+      {isSingleSelection && (
+        <Typography>
+          <code>Alt+Left Click</code> &mdash; mark fragment as neighbor
+        </Typography>
+      )}
+
+      {isSingleSelection && !isActiveGroupReady && (
+        <Typography>
+          When done, mark fragment as ready in context menu &mdash;{' '}
+          <code>Right Click</code>
+        </Typography>
+      )}
 
       {!hasSelection && (
         <Typography>
@@ -37,27 +59,9 @@ export function InfoPanel(): JSX.Element {
         </Typography>
       )}
 
-      <Typography>
-        <code>Right Click</code> &mdash; context menu
-      </Typography>
-
-      {isSingleSelection && (
-        <Typography>
-          <code>Alt+Left Click</code> &mdash; mark fragment as{' '}
-          <code className="neighbors">neighbor</code> of{' '}
-          <code className="selected-fragment">selected</code> fragment
-        </Typography>
-      )}
-
       {isMultiSelection && (
         <Typography>
           <code>Ctrl+G</code> &mdash; unite selected fragments
-        </Typography>
-      )}
-
-      {isSingleSelection && !isActiveGroupReady && (
-        <Typography>
-          When done, mark fragment as ready in context menu
         </Typography>
       )}
 

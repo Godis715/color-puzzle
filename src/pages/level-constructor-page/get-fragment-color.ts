@@ -10,7 +10,7 @@ function getFragmentColorWhenSelection({
   isActive: boolean;
   isHovered: boolean;
   isActiveNeighbor: boolean;
-}): paper.Color {
+}): string {
   const color = new paper.Color(FRAG_DEFAULT_COLOR);
 
   if (isActive) {
@@ -30,7 +30,7 @@ function getFragmentColorWhenSelection({
     color.blue -= 0.15;
   }
 
-  return color;
+  return color.toCSS(true);
 }
 
 function getFragmentColorWhenNoSelection({
@@ -39,7 +39,7 @@ function getFragmentColorWhenNoSelection({
 }: {
   isHovered: boolean;
   isReady: boolean;
-}): paper.Color {
+}): string {
   const color = new paper.Color(FRAG_DEFAULT_COLOR);
 
   if (isHovered) {
@@ -56,7 +56,7 @@ function getFragmentColorWhenNoSelection({
     color.blue -= 0.05;
   }
 
-  return color;
+  return color.toCSS(true);
 }
 
 export function getFragmentColor({
@@ -71,7 +71,7 @@ export function getFragmentColor({
   isActiveNeighbor: boolean;
   isReady: boolean;
   hasActive: boolean;
-}): paper.Color {
+}): string {
   return hasActive
     ? getFragmentColorWhenSelection({ isActive, isHovered, isActiveNeighbor })
     : getFragmentColorWhenNoSelection({ isHovered, isReady });
