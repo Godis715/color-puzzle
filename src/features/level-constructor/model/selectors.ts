@@ -1,6 +1,7 @@
 import { createSelector } from 'reselect';
 
 import { getGraphColoring } from 'src/shared/lib/graph-coloring-solver';
+import { estimateComplexity } from 'src/shared/lib/graph-complexity-estimator';
 
 import {
   getAdjacencyList,
@@ -152,4 +153,29 @@ export const selectGraphColoring = createSelector(
 export const selectChromaticNumber = createSelector(
   selectGraphColoring,
   (coloring) => Math.max(-1, ...Object.values(coloring)) + 1
+);
+
+export const selectGraphComplexity = createSelector(
+  selectGroups,
+  selectNeighborsGraph,
+  selectChromaticNumber,
+  (groups, neighborsGraph, chromaticNumber) => {
+    const groupsIds = groups.map(({ id }) => id);
+    const mapGroupIdToIdx = Object.fromEntries(
+      groupsIds.map((id, i) => [id, i])
+    );
+
+    const encodedGraph = new Array(groupsIds.length)
+      .fill(null)
+      .map(() => [] as number[]);
+
+    neighborsGraph.forEach(([n1, n2]) => {
+      const i1 = mapGroupIdToIdx[n1];
+      const i2 = mapGroupIdToIdx[n2];
+      encodedGraph[i1].push(i2);
+      encodedGraph[i2].push(i1);
+    });
+
+    return estimateComplexity(encodedGraph, chromaticNumber, 10000);
+  }
 );

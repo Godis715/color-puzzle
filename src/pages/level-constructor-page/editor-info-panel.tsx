@@ -46,6 +46,18 @@ export function EditorInfoPanel(): JSX.Element {
         </Typography>
       )}
 
+      {!hasSelection && (
+        <Typography>
+          <code>Click</code> &mdash; select fragment
+        </Typography>
+      )}
+
+      {!isMultiSelection && (
+        <Typography>
+          <code>Ctrl+Click</code> &mdash; select multiple fragments
+        </Typography>
+      )}
+
       {isSingleSelection && (
         <Typography>
           <code>Alt+Left Click</code> &mdash; mark fragment as neighbor
@@ -63,18 +75,6 @@ export function EditorInfoPanel(): JSX.Element {
       {isSingleSelection && isActiveGroupReady && (
         <Typography>
           Fragment is <code className="ready-fragment"> ready</code>
-        </Typography>
-      )}
-
-      {!hasSelection && (
-        <Typography>
-          <code>Click</code> &mdash; select fragment
-        </Typography>
-      )}
-
-      {!isMultiSelection && (
-        <Typography>
-          <code>Ctrl+Click</code> &mdash; select multiple fragments
         </Typography>
       )}
 

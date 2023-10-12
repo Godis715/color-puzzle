@@ -16,6 +16,7 @@ import {
   selectChromaticNumber,
   selectGraphColoring,
   selectMapFragmentIdToGroupId,
+  selectGraphComplexity,
 } from 'src/features/level-constructor';
 
 import { LevelRenderer } from './level-renderer';
@@ -51,6 +52,7 @@ export function LevelPreviewTab(): JSX.Element {
   const colorsNum = useSelector(selectChromaticNumber);
   const solutionColoring = useSelector(selectGraphColoring);
   const mapFragmentIdToGroupId = useSelector(selectMapFragmentIdToGroupId);
+  const levelComplexity = useSelector(selectGraphComplexity);
 
   const maxColor = colorsNum - 1;
 
@@ -107,6 +109,8 @@ export function LevelPreviewTab(): JSX.Element {
 
   const handleShowSolutionClick = (): void => setColoring(solutionColoring);
 
+  const levelComplexityFormatted = `${Math.round(100 * levelComplexity)}/100`;
+
   return (
     <>
       <Grid item xs={8}>
@@ -126,6 +130,7 @@ export function LevelPreviewTab(): JSX.Element {
 
       <Grid item xs={4}>
         <Typography>Total colors: {colorsNum}</Typography>
+        <Typography>Complexity: {levelComplexityFormatted}</Typography>
         <Typography>Total fragments: {groups.length}</Typography>
         <Typography>Errors count: {errorGroups.length}</Typography>
 

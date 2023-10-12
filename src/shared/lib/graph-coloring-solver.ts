@@ -35,3 +35,14 @@ export function getGraphColoring(graph: Graph): Coloring {
 
   throw new Error("Couldn't calculate graph coloring");
 }
+
+export function getGraphColoringGreedy(graph: Graph): Coloring {
+  const coloring = new Array(graph.length).fill(-1);
+  for (let i = 0; i < graph.length; i += 1) {
+    do {
+      coloring[i] += 1;
+    } while (graph[i].some((n) => coloring[n] === coloring[i]));
+  }
+
+  return coloring;
+}
