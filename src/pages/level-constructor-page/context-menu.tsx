@@ -30,7 +30,7 @@ export function ContextMenu(props: Props): JSX.Element {
     uniteActive,
     breakActive,
     toggleNeighbor,
-    toggleIsActiveGroupReady,
+    toggleGroupReady,
   } = useActions(actions);
 
   const group = groups.find(({ id }) => id === groupId);
@@ -125,7 +125,7 @@ export function ContextMenu(props: Props): JSX.Element {
       {shouldShowMarkAsReady && (
         <MenuItem
           onClick={() => {
-            toggleIsActiveGroupReady();
+            toggleGroupReady(groupId);
           }}
         >
           Mark as ready
@@ -135,7 +135,7 @@ export function ContextMenu(props: Props): JSX.Element {
       {shouldShowMarkAsNotReady && (
         <MenuItem
           onClick={() => {
-            toggleIsActiveGroupReady();
+            toggleGroupReady(groupId);
           }}
         >
           Mark as not ready

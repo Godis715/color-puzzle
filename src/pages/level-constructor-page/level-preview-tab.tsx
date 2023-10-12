@@ -69,11 +69,7 @@ export function LevelPreviewTab(): JSX.Element {
 
   const getGroupId = (fragmentId: string) => mapFragmentIdToGroupId[fragmentId];
 
-  const getFragmentColorById = (fragmentId: string): string => {
-    const groupId = getGroupId(fragmentId);
-
-    if (!groupId) return '';
-
+  const getGroupColorById = (groupId: string): string => {
     const colorIdx = coloring[groupId] ?? -1;
 
     const color = colorIdx === -1 ? 'rgb(237,237,237)' : colors[colorIdx];
@@ -129,7 +125,7 @@ export function LevelPreviewTab(): JSX.Element {
                     : coloring[groupId] - 1,
               });
             }}
-            getGroupColor={getFragmentColorById}
+            getGroupColor={getGroupColorById}
           />
         </Box>
       </Grid>

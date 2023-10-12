@@ -151,6 +151,14 @@ export const levelConstructorSlice = createSlice({
       state.decorations = action.payload;
     },
 
+    toggleGroupReady: (state, action: PayloadAction<string>) => {
+      const { readyGroups } = state;
+
+      const groupId = action.payload;
+
+      state.readyGroups = toggleArrayElement(readyGroups, groupId);
+    },
+
     toggleIsActiveGroupReady: (state) => {
       const { activeGroupsIds, readyGroups } = state;
 
