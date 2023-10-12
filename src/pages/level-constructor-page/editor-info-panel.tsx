@@ -21,9 +21,21 @@ export function EditorInfoPanel(): JSX.Element {
 
   const activeNeighborsIds = groups.filter((group) => group.isActiveNeighbor);
 
+  const readyCount = groups.filter((group) => group.isReady).length;
+  const notReadyCount = groups.length - readyCount;
+
   return (
     <Stack spacing={2}>
-      <Typography>Fragments: {groups.length}</Typography>
+      {!hasSelection && (
+        <Typography>
+          {groups.length} fragments in total
+          <br />
+          {readyCount} <code className="ready-fragment">ready</code> fragments
+          <br />
+          {notReadyCount} <code className="not-ready-fragment">not ready</code>{' '}
+          fragments
+        </Typography>
+      )}
 
       {hasSelection && (
         <Typography>
@@ -42,8 +54,15 @@ export function EditorInfoPanel(): JSX.Element {
 
       {isSingleSelection && !isActiveGroupReady && (
         <Typography>
-          When done, mark fragment as ready in context menu &mdash;{' '}
+          Fragment is <code className="not-ready-fragment">not ready</code>.
+          When done, mark it as ready in context menu &mdash;{' '}
           <code>Right Click</code>
+        </Typography>
+      )}
+
+      {isSingleSelection && isActiveGroupReady && (
+        <Typography>
+          Fragment is <code className="ready-fragment"> ready</code>
         </Typography>
       )}
 

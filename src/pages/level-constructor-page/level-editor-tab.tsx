@@ -6,6 +6,11 @@ import paper from 'paper';
 import Button from '@mui/material/Button';
 import Box from '@mui/material/Box';
 import Grid from '@mui/material/Grid';
+import Dialog from '@mui/material/Dialog';
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogContent from '@mui/material/DialogContent';
+import DialogContentText from '@mui/material/DialogContentText';
+import DialogActions from '@mui/material/DialogActions';
 
 import { useActions } from 'src/shared/hooks';
 import {
@@ -22,6 +27,7 @@ import { getFragmentColor } from './get-fragment-color';
 import { LevelRenderer } from './level-renderer';
 import { ContextMenu } from './context-menu';
 import { EditorInfoPanel } from './editor-info-panel';
+
 import './style.scss';
 
 const CANVAS_ID = 'paper-canvas';
@@ -107,6 +113,9 @@ export function LevelEditorTab(): JSX.Element {
     reset: resetState,
   } = useActions(actions);
 
+  const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
+  const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
+
   const [contextMenu, setContextMenu] = useState<{
     id: string;
     position: { top: number; left: number };
@@ -156,29 +165,9 @@ export function LevelEditorTab(): JSX.Element {
 
     const res = parseSvg(svgText);
 
+    resetState();
     setFragments(res.fragments);
     setDecorations(res.decorations);
-  };
-
-  const handleUploadFragmentsClick = (
-    ev: React.MouseEvent<HTMLInputElement, MouseEvent>
-  ) => {
-    if (!fragments.length) return;
-
-    const isConfirmed = confirm(
-      'If you upload new fragment file, current fragments will be deleted. Continue?'
-    );
-
-    if (!isConfirmed) {
-      ev.stopPropagation();
-      ev.preventDefault();
-    }
-  };
-
-  const handleReset = (): void => {
-    const isConfirmed = confirm('Current progress will be deleted. Continue?');
-
-    if (isConfirmed) resetState();
   };
 
   const getGroupColorById = (groupId: string): string => {
@@ -198,6 +187,61 @@ export function LevelEditorTab(): JSX.Element {
   return (
     <>
       <canvas id={CANVAS_ID} style={{ display: 'none' }} />
+
+      <Dialog
+        open={isUploadDialogOpen}
+        onClose={() => setIsUploadDialogOpen(false)}
+      >
+        <DialogTitle>Reset progress?</DialogTitle>
+        <DialogContent>
+          <DialogContentText id="alert-dialog-description">
+            If you upload new file, current progress will be discarded
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button component="label">
+            Continue
+            <input
+              id="upload-fragments"
+              type="file"
+              onChange={(ev) => {
+                handleUploadFragmentsChange(ev);
+                setIsUploadDialogOpen(false);
+              }}
+              hidden
+            />
+          </Button>
+          <Button onClick={() => setIsUploadDialogOpen(false)} autoFocus>
+            Cancel
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog
+        open={isResetDialogOpen}
+        onClose={() => setIsResetDialogOpen(false)}
+      >
+        <DialogTitle>Reset progress?</DialogTitle>
+        <DialogContent>
+          <DialogContentText id="alert-dialog-description">
+            This action cannot be undone
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            component="label"
+            onClick={() => {
+              resetState();
+              setIsResetDialogOpen(false);
+            }}
+          >
+            Reset
+          </Button>
+          <Button onClick={() => setIsResetDialogOpen(false)} autoFocus>
+            Cancel
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       <Grid item xs={8}>
         <Box display="flex" flexDirection="column" alignItems="center">
@@ -229,18 +273,11 @@ export function LevelEditorTab(): JSX.Element {
             flexWrap="wrap"
             sx={{ marginTop: 2 }}
           >
-            <Button component="label">
+            <Button onClick={() => setIsUploadDialogOpen(true)}>
               Upload fragments
-              <input
-                id="upload-fragments"
-                type="file"
-                onClick={handleUploadFragmentsClick}
-                onChange={handleUploadFragmentsChange}
-                hidden
-              />
             </Button>
 
-            <Button color="warning" onClick={handleReset}>
+            <Button color="warning" onClick={() => setIsResetDialogOpen(true)}>
               Reset
             </Button>
           </Box>

@@ -39,6 +39,11 @@ code {
   border-color: rgb(205, 220, 205);
 }
 
+.not-ready-fragment {
+  background-color: #ecdfdf;
+  border-color: #ceb4b4;
+}
+
 .viewport {
   display: block;
   width: calc(100% - 2em);
