@@ -2,7 +2,6 @@ import { createSelector } from 'reselect';
 
 import { getGraphColoring } from 'src/shared/lib/graph-coloring-solver';
 
-import { getElementsByGroup } from '../lib/grouping';
 import {
   getAdjacencyList,
   getGraphNodeNeighbors,
@@ -37,36 +36,6 @@ export const selectFragments = createSelector(
   (state) => state.fragments
 );
 
-export const selectHoveredFragmentsIds = createSelector(
-  selectGrouping,
-  selectHoveredGroupId,
-  selectLevelConstructorState,
-  (grouping, hoveredGroupId) =>
-    hoveredGroupId ? getElementsByGroup(grouping, [hoveredGroupId]) : []
-);
-
-export const selectActiveFragmentsIds = createSelector(
-  selectGrouping,
-  selectActiveGroupsIds,
-  (grouping, activeGroupsIds) => getElementsByGroup(grouping, activeGroupsIds)
-);
-
-export const selectActiveFragmentNeighborsIds = createSelector(
-  selectGrouping,
-  selectNeighborsGraph,
-  selectActiveGroupsIds,
-  (grouping, neighborsGraph, activeGroupsIds) => {
-    if (activeGroupsIds.length !== 1) return [];
-
-    const neighborGroups = getGraphNodeNeighbors(
-      neighborsGraph,
-      activeGroupsIds
-    );
-
-    return getElementsByGroup(grouping, neighborGroups);
-  }
-);
-
 export const selectDecorations = createSelector(
   selectLevelConstructorState,
   (state) => state.decorations
@@ -88,22 +57,6 @@ export const selectIsActiveGroupReady = createSelector(
     const groupId = activeGroupsIds[0];
 
     return readyGroups.includes(groupId);
-  }
-);
-
-export const selectCanBreakActiveGroup = createSelector(
-  selectActiveGroupsIds,
-  selectGrouping,
-  (activeGroupsIds, grouping) => {
-    const isSingleSelect = activeGroupsIds.length === 1;
-
-    if (!isSingleSelect) return false;
-
-    const groupId = activeGroupsIds[0];
-
-    const fragments = grouping.filter(([, id]) => id === groupId);
-
-    return fragments.length > 1;
   }
 );
 
@@ -144,45 +97,9 @@ export const selectGroups = createSelector(
   }
 );
 
-export const selectFragmentsDtos = createSelector(
-  selectFragments,
+export const selectMapFragmentIdToGroupId = createSelector(
   selectGrouping,
-  selectActiveGroupsIds,
-  selectHoveredGroupId,
-  selectNeighborsGraph,
-  selectReadyGroups,
-  (
-    fragments,
-    grouping,
-    activeGroupsIds,
-    hoveredGroupId,
-    neighborsGraph,
-    readyGroups
-  ) => {
-    const mapFragmentIdToGroupId = Object.fromEntries(grouping);
-
-    const mapGroupIdToNeighborsIds = getAdjacencyList(neighborsGraph);
-
-    const neighborGroups = getGraphNodeNeighbors(
-      neighborsGraph,
-      activeGroupsIds
-    );
-
-    return fragments.map((fragment) => {
-      const groupId = mapFragmentIdToGroupId[fragment.id];
-
-      return {
-        groupId,
-        id: fragment.id,
-        data: fragment.data,
-        isActive: activeGroupsIds.includes(groupId),
-        isHovered: hoveredGroupId === groupId,
-        neighbors: mapGroupIdToNeighborsIds[groupId] ?? [],
-        isReady: readyGroups.includes(groupId),
-        isActiveNeighbor: neighborGroups.includes(groupId),
-      };
-    });
-  }
+  (grouping) => Object.fromEntries(grouping)
 );
 
 export const selectIsSingleSelection = createSelector(
@@ -200,7 +117,7 @@ export const selectHasSelection = createSelector(
   (activeGroupsIds) => activeGroupsIds.length > 0
 );
 
-export const selectGraphColoringRaw = createSelector(
+export const selectGraphColoring = createSelector(
   selectGroups,
   selectNeighborsGraph,
   (groups, neighborsGraph) => {
@@ -231,6 +148,6 @@ export const selectGraphColoringRaw = createSelector(
 );
 
 export const selectChromaticNumber = createSelector(
-  selectGraphColoringRaw,
+  selectGraphColoring,
   (coloring) => Math.max(-1, ...Object.values(coloring)) + 1
 );

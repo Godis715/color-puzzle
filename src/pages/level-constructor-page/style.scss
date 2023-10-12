@@ -16,6 +16,27 @@ code {
   border: none;
 }
 
+.Fragment {
+  transition: 140ms;
+}
+
+@keyframes flickering {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0.5;
+  }
+}
+
+.LevelPreviewTab {
+  &-Fragment {
+    &_isError {
+      animation: 500ms linear 1s infinite alternate flickering;
+    }
+  }
+}
+
 .neighbors {
   color: white;
   background-color: rgb(143, 143, 172);

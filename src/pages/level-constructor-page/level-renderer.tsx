@@ -1,52 +1,67 @@
+import { cn } from '@bem-react/classname';
 import SVG from 'react-inlinesvg';
 
-import { Fragment } from 'src/features/level-constructor';
-import { Decorations } from 'src/features/level-constructor/model';
+import { Fragment, Decorations } from 'src/features/level-constructor';
 
 type Props = {
   fragments: Fragment[];
   decorations: Decorations | null;
-  getFragmentColor: (id: string) => string;
-  onFragmentHover: (id: string | null) => void;
-  onFragmentClick: (id: string, ev: React.MouseEvent) => void;
-  onFragmentContextMenu: (
+
+  getFragmentGroupId: (id: string) => string;
+  getGroupColor: (id: string) => string;
+  getGroupClassName?: (id: string) => string;
+
+  onGroupHover: (id: string | null) => void;
+  onGroupClick: (id: string, ev: React.MouseEvent) => void;
+  onGroupContextMenu: (
     id: string,
     position: { top: number; left: number }
   ) => void;
 };
 
+const cnFragment = cn('Fragment');
+
 export function LevelRenderer(props: Props): JSX.Element {
   const {
     fragments,
     decorations,
-    getFragmentColor,
-    onFragmentHover,
-    onFragmentClick,
-    onFragmentContextMenu,
+    getFragmentGroupId,
+    getGroupColor,
+    onGroupHover,
+    onGroupClick,
+    onGroupContextMenu,
+    getGroupClassName,
   } = props;
 
   return (
     <div className="viewport">
       <svg viewBox="0 0 100 100">
-        {fragments.map((fragment) => (
-          <path
-            className="fragment"
-            d={fragment.data}
-            key={fragment.id}
-            fill={getFragmentColor(fragment.id)}
-            onMouseEnter={() => onFragmentHover(fragment.id)}
-            onMouseLeave={() => onFragmentHover(null)}
-            onClick={(event) => onFragmentClick(fragment.id, event)}
-            onContextMenu={(ev) => {
-              ev.preventDefault();
+        {fragments.map((fragment) => {
+          const groupId = getFragmentGroupId(fragment.id);
 
-              onFragmentContextMenu(fragment.id, {
-                top: ev.clientY,
-                left: ev.clientX,
-              });
-            }}
-          />
-        ))}
+          const mixClassName = getGroupClassName?.(groupId);
+          const className = cnFragment(null, mixClassName);
+
+          return (
+            <path
+              key={fragment.id}
+              className={className}
+              d={fragment.data}
+              fill={getGroupColor(groupId)}
+              onMouseEnter={() => onGroupHover(groupId)}
+              onMouseLeave={() => onGroupHover(null)}
+              onClick={(event) => onGroupClick(groupId, event)}
+              onContextMenu={(ev) => {
+                ev.preventDefault();
+
+                onGroupContextMenu(groupId, {
+                  top: ev.clientY,
+                  left: ev.clientX,
+                });
+              }}
+            />
+          );
+        })}
       </svg>
 
       {decorations && (

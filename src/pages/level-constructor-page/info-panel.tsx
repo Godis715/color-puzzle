@@ -6,11 +6,9 @@ import {
   selectGroups,
   selectIsActiveGroupReady,
   selectIsSingleSelection,
-} from 'src/features/level-constructor';
-import {
   selectHasSelection,
   selectIsMultiSelection,
-} from 'src/features/level-constructor/model';
+} from 'src/features/level-constructor';
 
 export function InfoPanel(): JSX.Element {
   const groups = useSelector(selectGroups);

@@ -2,6 +2,7 @@
 /* eslint-disable jsx-a11y/click-events-have-key-events */
 import { useEffect, useMemo, useState } from 'react';
 import { useSelector } from 'react-redux';
+import { cn } from '@bem-react/classname';
 import Box from '@mui/material/Box';
 import Grid from '@mui/material/Grid';
 import Button from '@mui/material/Button';
@@ -12,12 +13,10 @@ import {
   selectFragments,
   selectDecorations,
   selectGroups,
-} from 'src/features/level-constructor';
-import {
   selectChromaticNumber,
-  selectFragmentsDtos,
-  selectGraphColoringRaw,
-} from 'src/features/level-constructor/model';
+  selectGraphColoring,
+  selectMapFragmentIdToGroupId,
+} from 'src/features/level-constructor';
 
 import { LevelRenderer } from './level-renderer';
 
@@ -36,6 +35,8 @@ export const colors = [
   '#ffccff',
 ];
 
+const cnLevelPreviewTab = cn('LevelPreviewTab');
+
 export function LevelPreviewTab(): JSX.Element {
   const [coloring, setColoring] = useState<Record<string, number>>({});
   const [hoveredGroupId, setHoveredGroupId] = useState<string | null>(null);
@@ -43,9 +44,9 @@ export function LevelPreviewTab(): JSX.Element {
   const fragments = useSelector(selectFragments);
   const decorations = useSelector(selectDecorations);
   const groups = useSelector(selectGroups);
-  const fragmentsDtos = useSelector(selectFragmentsDtos);
   const colorsNum = useSelector(selectChromaticNumber);
-  const solutionColoring = useSelector(selectGraphColoringRaw);
+  const solutionColoring = useSelector(selectGraphColoring);
+  const mapFragmentIdToGroupId = useSelector(selectMapFragmentIdToGroupId);
 
   const reset = (): void => {
     setColoring(Object.fromEntries(groups.map(({ id }) => [id, -1])));
@@ -66,8 +67,7 @@ export function LevelPreviewTab(): JSX.Element {
     [coloring, groups]
   );
 
-  const getGroupId = (fragmentId: string | null) =>
-    fragmentsDtos.find(({ id }) => fragmentId === id)?.groupId ?? null;
+  const getGroupId = (fragmentId: string) => mapFragmentIdToGroupId[fragmentId];
 
   const getFragmentColorById = (fragmentId: string): string => {
     const groupId = getGroupId(fragmentId);
@@ -98,22 +98,29 @@ export function LevelPreviewTab(): JSX.Element {
           <LevelRenderer
             fragments={fragments}
             decorations={decorations}
-            onFragmentHover={(id) => setHoveredGroupId(getGroupId(id))}
-            onFragmentClick={(id) => {
-              const groupId = getGroupId(id);
+            getFragmentGroupId={getGroupId}
+            onGroupHover={setHoveredGroupId}
+            getGroupClassName={(groupId) => {
+              const group = groups.find((g) => g.id === groupId);
 
-              if (!groupId) return;
+              if (!group) return '';
 
+              const isError = group.neighbors.some(
+                (nid) =>
+                  coloring[nid] !== -1 &&
+                  coloring[group.id] !== -1 &&
+                  coloring[nid] === coloring[group.id]
+              );
+
+              return cnLevelPreviewTab('Fragment', { isError });
+            }}
+            onGroupClick={(groupId) => {
               setColoring({
                 ...coloring,
                 [groupId]: ((coloring[groupId] + 2) % (colorsNum + 1)) - 1,
               });
             }}
-            onFragmentContextMenu={(id) => {
-              const groupId = getGroupId(id);
-
-              if (!groupId) return;
-
+            onGroupContextMenu={(groupId) => {
               setColoring({
                 ...coloring,
                 [groupId]:
@@ -122,7 +129,7 @@ export function LevelPreviewTab(): JSX.Element {
                     : coloring[groupId] - 1,
               });
             }}
-            getFragmentColor={getFragmentColorById}
+            getGroupColor={getFragmentColorById}
           />
         </Box>
       </Grid>
