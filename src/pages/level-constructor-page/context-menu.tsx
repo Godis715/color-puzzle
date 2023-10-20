@@ -31,6 +31,7 @@ export function ContextMenu(props: Props): JSX.Element {
     breakActive,
     toggleNeighbor,
     toggleGroupReady,
+    setActiveGroupId,
   } = useActions(actions);
 
   const group = groups.find(({ id }) => id === groupId);
@@ -38,6 +39,8 @@ export function ContextMenu(props: Props): JSX.Element {
   if (!group) return <></>;
 
   const { isActive, isActiveNeighbor, isReady } = group;
+
+  const firstNonReadyGroup = groups.find((g) => !g.isReady && g.id !== groupId);
 
   const menuItems = [
     {
@@ -61,9 +64,25 @@ export function ContextMenu(props: Props): JSX.Element {
       isVisible: isSingleSelection && !isActive,
     },
     {
+      label: 'Mark as ready & next',
+      onClick: () => {
+        toggleGroupReady(groupId);
+        setActiveGroupId(firstNonReadyGroup?.id ?? null);
+      },
+      isVisible: !isReady && isSingleSelection && isActive,
+    },
+    {
       label: isReady ? 'Mark as not ready' : 'Mark as ready',
-      onClick: () => toggleGroupReady(groupId),
+      onClick: () => {
+        toggleGroupReady(groupId);
+        if (!isReady) setActiveGroupId(null);
+      },
       isVisible: !hasSelection || (isSingleSelection && isActive),
+    },
+    {
+      label: 'To next non-ready',
+      onClick: () => setActiveGroupId(firstNonReadyGroup?.id ?? null),
+      isVisible: isReady && isSingleSelection && isActive,
     },
     {
       label: 'Unite',

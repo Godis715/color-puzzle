@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
 import paper from 'paper';
+import { saveAs } from 'file-saver';
 import Button from '@mui/material/Button';
 import Box from '@mui/material/Box';
 import Grid from '@mui/material/Grid';
@@ -21,6 +22,7 @@ import {
   Decorations,
   Fragment,
   selectMapFragmentIdToGroupId,
+  selectLevelJson,
 } from 'src/features/level-constructor';
 
 import { getFragmentColor } from './get-fragment-color';
@@ -110,6 +112,7 @@ export function LevelEditorTab(): JSX.Element {
     setDecorations,
     setHoveredGroupId,
     uniteActive,
+    restoreState,
     reset: resetState,
   } = useActions(actions);
 
@@ -125,6 +128,7 @@ export function LevelEditorTab(): JSX.Element {
   const decorations = useSelector(selectDecorations);
   const groups = useSelector(selectGroups);
   const mapFragmentIdToGroupId = useSelector(selectMapFragmentIdToGroupId);
+  const levelJson = useSelector(selectLevelJson);
 
   useEffect(() => {
     const listener = (ev: KeyboardEvent): void => {
@@ -182,6 +186,28 @@ export function LevelEditorTab(): JSX.Element {
       isReady: group.isReady,
       hasActive,
     });
+  };
+
+  const handleDownloadLevelClick = (): void => {
+    const blob = new Blob([levelJson], { type: 'text/plain;charset=utf-8' });
+    saveAs(blob, 'level.json');
+  };
+
+  const handleUploadLevelClick = async (
+    ev: React.ChangeEvent<HTMLInputElement>
+  ): Promise<void> => {
+    const file = ev.target.files?.item(0) ?? null;
+
+    if (!file) return;
+
+    const newLevelJson = await getFileContentAsText(file);
+
+    if (!newLevelJson) return;
+
+    const level = JSON.parse(newLevelJson);
+
+    resetState();
+    restoreState(level);
   };
 
   return (
@@ -279,6 +305,18 @@ export function LevelEditorTab(): JSX.Element {
 
             <Button color="warning" onClick={() => setIsResetDialogOpen(true)}>
               Reset
+            </Button>
+
+            <Button onClick={handleDownloadLevelClick}>Download level</Button>
+
+            <Button component="label">
+              Upload level
+              <input
+                id="upload-level"
+                type="file"
+                onChange={handleUploadLevelClick}
+                hidden
+              />
             </Button>
           </Box>
         </Box>

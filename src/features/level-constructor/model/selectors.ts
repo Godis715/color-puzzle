@@ -179,3 +179,17 @@ export const selectGraphComplexity = createSelector(
     return estimateComplexity(encodedGraph, chromaticNumber, 10000);
   }
 );
+
+export const selectLevelJson = createSelector(
+  selectLevelConstructorState,
+  selectChromaticNumber,
+  (state, chromaticNumber) =>
+    JSON.stringify({
+      grouping: state.grouping,
+      neighborsGraph: state.neighborsGraph,
+      fragments: state.fragments,
+      decorations: state.decorations,
+      readyGroups: state.readyGroups,
+      chromaticNumber,
+    })
+);

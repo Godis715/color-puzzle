@@ -173,6 +173,11 @@ export const levelConstructorSlice = createSlice({
       state.activeGroupsIds = [];
     },
 
+    restoreState: (state, action: PayloadAction<any>) => ({
+      ...initialState,
+      ...action.payload,
+    }),
+
     reset: (state) => Object.assign(state, initialState),
   },
 });
