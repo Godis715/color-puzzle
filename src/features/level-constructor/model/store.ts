@@ -173,6 +173,11 @@ export const levelConstructorSlice = createSlice({
       state.activeGroupsIds = [];
     },
 
+    setNeighbors: (state, action: PayloadAction<UndirectedGraph>) => ({
+      ...state,
+      neighborsGraph: action.payload,
+    }),
+
     restoreState: (state, action: PayloadAction<any>) => ({
       ...initialState,
       ...action.payload,

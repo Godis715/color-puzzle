@@ -23,6 +23,7 @@ import {
   Fragment,
   selectMapFragmentIdToGroupId,
   selectLevelJson,
+  selectGrouping,
 } from 'src/features/level-constructor';
 
 import { getFragmentColor } from './get-fragment-color';
@@ -31,6 +32,8 @@ import { ContextMenu } from './context-menu';
 import { EditorInfoPanel } from './editor-info-panel';
 
 import './style.scss';
+import { getPathsAdjacencyList } from 'src/features/level-constructor/lib/get-paths-adjacency';
+import { UndirectedGraph } from 'src/features/level-constructor/lib/undirected-graph';
 
 const CANVAS_ID = 'paper-canvas';
 
@@ -112,6 +115,7 @@ export function LevelEditorTab(): JSX.Element {
     setDecorations,
     setHoveredGroupId,
     uniteActive,
+    setNeighbors,
     restoreState,
     reset: resetState,
   } = useActions(actions);
@@ -129,6 +133,7 @@ export function LevelEditorTab(): JSX.Element {
   const groups = useSelector(selectGroups);
   const mapFragmentIdToGroupId = useSelector(selectMapFragmentIdToGroupId);
   const levelJson = useSelector(selectLevelJson);
+  const grouping = Object.fromEntries(useSelector(selectGrouping));
 
   useEffect(() => {
     const listener = (ev: KeyboardEvent): void => {
@@ -208,6 +213,39 @@ export function LevelEditorTab(): JSX.Element {
 
     resetState();
     restoreState(level);
+  };
+
+  const handleAutogenClick = (): void => {
+    if (!fragments) return;
+
+    const paths = fragments.map((fragment) => {
+      const path = paper.project.importSVG(`<path d="${fragment.data}" />`, {
+        insert: false,
+      }) as paper.PathItem;
+
+      path.name = fragment.id;
+
+      return path;
+    });
+
+    const pathsAdjacency = getPathsAdjacencyList(paths, 3, 10);
+
+    if (pathsAdjacency.error) {
+      console.error(pathsAdjacency.error);
+      return;
+    }
+
+    const groupNeighbors: UndirectedGraph = [];
+
+    Object.entries(pathsAdjacency.value).map(([pathName, adjacentPaths]) =>
+      adjacentPaths.forEach((adjPathName) => {
+        const groupId = grouping[pathName];
+        const adjGroupId = grouping[adjPathName];
+        groupNeighbors.push([groupId, adjGroupId]);
+      })
+    );
+
+    setNeighbors(groupNeighbors);
   };
 
   return (
@@ -318,6 +356,8 @@ export function LevelEditorTab(): JSX.Element {
                 hidden
               />
             </Button>
+
+            <Button onClick={handleAutogenClick}>Autogen</Button>
           </Box>
         </Box>
       </Grid>
