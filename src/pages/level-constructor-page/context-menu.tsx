@@ -39,19 +39,38 @@ export function ContextMenu(props: Props): JSX.Element {
 
   const { isActive, isActiveNeighbor, isReady } = group;
 
-  const shouldShowDeselect = isMultiSelection && isActive;
-
-  const shouldShowAddToSelection = hasSelection && !isActive;
-
-  const shouldShowBreak =
-    isSingleSelection && isActive && group.fragmentIds.length > 1;
-
-  const shouldShowToggleNeighbor = isSingleSelection && !isActive;
-
-  const shouldShowToggleIsReady =
-    !hasSelection || (isSingleSelection && isActive);
-
-  const shouldShowUnite = isMultiSelection && isActive;
+  const menuItems = [
+    {
+      label: 'Add to selection',
+      onClick: () => toggleActiveGroupId(groupId),
+      isVisible: hasSelection && !isActive,
+    },
+    {
+      label: 'Deselect',
+      onClick: () => toggleActiveGroupId(groupId),
+      isVisible: isMultiSelection && isActive,
+    },
+    {
+      label: 'Break',
+      onClick: () => breakActive(),
+      isVisible: isSingleSelection && isActive && group.fragmentIds.length > 1,
+    },
+    {
+      label: isActiveNeighbor ? 'Mark as not neighbor' : 'Mark as neighbor',
+      onClick: () => toggleNeighbor(groupId),
+      isVisible: isSingleSelection && !isActive,
+    },
+    {
+      label: isReady ? 'Mark as not ready' : 'Mark as ready',
+      onClick: () => toggleGroupReady(groupId),
+      isVisible: !hasSelection || (isSingleSelection && isActive),
+    },
+    {
+      label: 'Unite',
+      onClick: () => uniteActive(),
+      isVisible: isMultiSelection && isActive,
+    },
+  ];
 
   return (
     <Menu
@@ -65,37 +84,11 @@ export function ContextMenu(props: Props): JSX.Element {
         handleClose();
       }}
     >
-      {shouldShowAddToSelection && (
-        <MenuItem onClick={() => toggleActiveGroupId(groupId)}>
-          Add to selection
-        </MenuItem>
-      )}
-
-      {shouldShowDeselect && (
-        <MenuItem onClick={() => toggleActiveGroupId(groupId)}>
-          Deselect
-        </MenuItem>
-      )}
-
-      {shouldShowBreak && (
-        <MenuItem onClick={() => breakActive()}>Break</MenuItem>
-      )}
-
-      {shouldShowToggleNeighbor && (
-        <MenuItem onClick={() => toggleNeighbor(groupId)}>
-          {isActiveNeighbor ? 'Mark as not neighbor' : 'Mark as neighbor'}
-        </MenuItem>
-      )}
-
-      {shouldShowToggleIsReady && (
-        <MenuItem onClick={() => toggleGroupReady(groupId)}>
-          {isReady ? 'Mark as not ready' : 'Mark as ready'}
-        </MenuItem>
-      )}
-
-      {shouldShowUnite && (
-        <MenuItem onClick={() => uniteActive()}>Unite</MenuItem>
-      )}
+      {menuItems
+        .filter(({ isVisible }) => isVisible)
+        .map(({ label, onClick }) => (
+          <MenuItem onClick={onClick}>{label}</MenuItem>
+        ))}
     </Menu>
   );
 }
