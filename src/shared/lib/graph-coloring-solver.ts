@@ -1,3 +1,68 @@
+import * as MiniZinc from 'minizinc';
+
+const initPromise = MiniZinc.init({
+  workerURL: 'http://localhost:3000/minizinc-worker.js',
+});
+
+export async function getGraphColoringBySat(
+  graph: Graph
+): Promise<Coloring | null> {
+  try {
+    await initPromise;
+
+    const model = new MiniZinc.Model();
+
+    model.addFile(
+      'test.mzn',
+      `
+      % Input Parameters (values for these specified in .dzn data file)
+      int: NUM_NODES; 
+      int: NUM_EDGES;
+      array[1..NUM_EDGES,1..2] of int: edges;
+    
+      % Decision Variable: the solver will find the values of these
+      array[0..NUM_NODES-1] of var 1..NUM_NODES: color;
+    
+      % Our Constraints 
+      constraint forall(e in 1..NUM_EDGES)(color[edges[e,1]] != color[edges[e,2]]);
+    
+      % Our Objective Function
+      solve minimize max(color);
+    
+      % formatted output
+      output[show(color)];
+      `
+    );
+
+    const edges = graph
+      .map((neighbors, n1) => neighbors.map((n2) => [n1, n2]))
+      .flat()
+      .filter(([n1, n2]) => n1 < n2);
+
+    model.addJson({
+      NUM_NODES: graph.length,
+      NUM_EDGES: edges.length,
+      edges,
+    });
+
+    const result = await model.solve({
+      options: {
+        solver: 'gecode',
+        'all-solutions': true,
+      },
+    });
+
+    const coloring = result.solution?.output.json?.color;
+
+    if (!coloring || !Array.isArray(coloring)) return null;
+
+    return (coloring as Coloring).map((c) => c - 1);
+  } catch (err) {
+    console.error(err);
+    return null;
+  }
+}
+
 export type Graph = number[][];
 
 export type Coloring = number[];

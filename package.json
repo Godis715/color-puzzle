@@ -17,6 +17,7 @@
     "@types/react": "^18.2.24",
     "@types/react-dom": "^18.2.8",
     "file-saver": "^2.0.5",
+    "minizinc": "^4.1.1",
     "paper": "^0.12.17",
     "paperjs-offset": "^1.0.8",
     "react": "^18.2.0",
@@ -31,6 +32,7 @@
     "web-vitals": "^2.1.4"
   },
   "scripts": {
+    "postinstall": "ncp node_modules/minizinc/dist public",
     "start": "cross-env GENERATE_SOURCEMAP=false react-scripts start",
     "build": "cross-env GENERATE_SOURCEMAP=false react-scripts build",
     "test": "react-scripts test",
@@ -61,6 +63,7 @@
     "eslint-config-airbnb-typescript": "^17.1.0",
     "eslint-config-prettier": "^9.0.0",
     "eslint-plugin-prettier": "^5.0.0",
+    "ncp": "^2.0.0",
     "npm-force-resolutions": "^0.0.10",
     "prettier": "^3.0.3",
     "sass": "^1.69.0"

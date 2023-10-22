@@ -13,11 +13,10 @@ import {
   selectFragments,
   selectDecorations,
   selectGroups,
-  selectChromaticNumber,
-  selectGraphColoring,
   selectMapFragmentIdToGroupId,
-  selectGraphComplexity,
+  selectNeighborsGraph,
 } from 'src/features/level-constructor';
+import { getGraphColoringBySat } from 'src/shared/lib/graph-coloring-solver';
 
 import { LevelRenderer } from './level-renderer';
 
@@ -44,17 +43,57 @@ export function LevelPreviewTab(): JSX.Element {
   const groups = useSelector(selectGroups);
   const defaultColoring = Object.fromEntries(groups.map(({ id }) => [id, -1]));
   const [coloring, setColoring] = useState(defaultColoring);
+  const [solutionColoring, setSolutionColoring] = useState<Record<
+    string,
+    number
+  > | null>(null);
 
   const [hoveredGroupId, setHoveredGroupId] = useState<string | null>(null);
 
   const fragments = useSelector(selectFragments);
   const decorations = useSelector(selectDecorations);
-  const colorsNum = useSelector(selectChromaticNumber);
-  const solutionColoring = useSelector(selectGraphColoring);
   const mapFragmentIdToGroupId = useSelector(selectMapFragmentIdToGroupId);
-  const levelComplexity = useSelector(selectGraphComplexity);
+  const levelComplexity = 0;
+  const neighborsGraph = useSelector(selectNeighborsGraph);
 
-  const maxColor = colorsNum - 1;
+  useEffect(() => {
+    const calculateGraphColoring = async () => {
+      const groupsIds = groups.map(({ id }) => id);
+
+      const mapGroupIdToIdx = Object.fromEntries(
+        groupsIds.map((id, i) => [id, i])
+      );
+
+      const encodedGraph = new Array(groupsIds.length)
+        .fill(null)
+        .map(() => [] as number[]);
+
+      neighborsGraph.forEach(([n1, n2]) => {
+        const i1 = mapGroupIdToIdx[n1];
+        const i2 = mapGroupIdToIdx[n2];
+        encodedGraph[i1].push(i2);
+        encodedGraph[i2].push(i1);
+      });
+
+      const solution = await getGraphColoringBySat(encodedGraph);
+
+      if (!solution) return;
+
+      const mapGroupToColor = Object.fromEntries(
+        solution.map((color, i) => [groupsIds[i], color])
+      );
+
+      setSolutionColoring(mapGroupToColor);
+    };
+
+    calculateGraphColoring();
+  }, []);
+
+  const colorsNum = solutionColoring
+    ? Math.max(...Object.values(solutionColoring)) + 1
+    : null;
+
+  const maxColor = colorsNum ? colorsNum - 1 : null;
 
   const getFragmentGroupId = (fragmentId: string) =>
     mapFragmentIdToGroupId[fragmentId];
@@ -101,13 +140,17 @@ export function LevelPreviewTab(): JSX.Element {
   };
 
   const handleGroupRightClick = (groupId: string): void => {
+    if (maxColor === null) return;
+
     const currColor = coloring[groupId];
     const newColor = currColor === -1 ? maxColor : currColor - 1;
 
     setColoring({ ...coloring, [groupId]: newColor });
   };
 
-  const handleShowSolutionClick = (): void => setColoring(solutionColoring);
+  const handleShowSolutionClick = (): void => {
+    if (solutionColoring) setColoring(solutionColoring);
+  };
 
   const levelComplexityFormatted = `${Math.round(100 * levelComplexity)}/100`;
 
@@ -129,7 +172,9 @@ export function LevelPreviewTab(): JSX.Element {
       </Grid>
 
       <Grid item xs={4}>
-        <Typography>Total colors: {colorsNum}</Typography>
+        <Typography>
+          Total colors: {colorsNum === null ? 'n/a' : colorsNum}
+        </Typography>
         <Typography>Complexity: {levelComplexityFormatted}</Typography>
         <Typography>Total fragments: {groups.length}</Typography>
         <Typography>Errors count: {errorGroups.length}</Typography>
