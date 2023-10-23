@@ -21,22 +21,6 @@ export function breakGroup(
   return grouping.map(([id, g]) => (g === group ? [id, id] : [id, g]));
 }
 
-export function getElementsByGroup(
-  grouping: Grouping,
-  groups: string[]
-): string[] {
-  return grouping
-    .filter(([, group]) => groups.includes(group))
-    .map(([id]) => id);
-}
-
-export function getGroupByElement(
-  grouping: Grouping,
-  id: string
-): string | null {
-  return grouping.find(([elemId]) => elemId === id)?.[1] ?? null;
-}
-
 export function createGrouping(ids: string[]): Grouping {
   return ids.map((id) => [id, id]);
 }

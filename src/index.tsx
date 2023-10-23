@@ -29,10 +29,14 @@ const router = createBrowserRouter([
       },
       {
         path: 'levels',
-        element: <LevelsListPage />,
+        element: <Outlet />,
         children: [
           {
-            path: 'levels/:levelId',
+            path: '',
+            element: <LevelsListPage />,
+          },
+          {
+            path: ':levelId',
             element: <LevelPage />,
           },
         ],

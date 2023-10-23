@@ -13,7 +13,7 @@ function distance(path: paper.PathItem, point: paper.Point): number {
   return path.getNearestPoint(point).getDistance(point);
 }
 
-export function getArePathsNeighbors(
+function getArePathsNeighbors(
   p1: paper.Path,
   p2: paper.Path,
   distEps: number,
