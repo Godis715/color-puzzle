@@ -76,8 +76,6 @@ export const selectGroups = createSelector(
 
     const mapGroupIdToNeighborsIds = getAdjacencyList(neighborsGraph);
 
-    console.log(JSON.stringify(mapGroupIdToNeighborsIds));
-
     const neighborGroups = getGraphNodeNeighbors(
       neighborsGraph,
       activeGroupsIds

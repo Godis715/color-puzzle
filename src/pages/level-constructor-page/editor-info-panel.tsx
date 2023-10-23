@@ -11,6 +11,8 @@ import {
   selectActiveGroupsIds,
 } from 'src/features/level-constructor';
 
+const SHOW_HINTS = false;
+
 export function EditorInfoPanel(): JSX.Element {
   const groups = useSelector(selectGroups);
   const isActiveGroupReady = useSelector(selectIsActiveGroupReady);
@@ -26,16 +28,14 @@ export function EditorInfoPanel(): JSX.Element {
 
   return (
     <Stack spacing={2}>
-      {!hasSelection && (
-        <Typography>
-          {groups.length} fragments in total
-          <br />
-          {readyCount} <code className="ready-fragment">ready</code> fragments
-          <br />
-          {notReadyCount} <code className="not-ready-fragment">not ready</code>{' '}
-          fragments
-        </Typography>
-      )}
+      <Typography>
+        {groups.length} fragments in total
+        <br />
+        {readyCount} <code className="ready-fragment">ready</code> fragments
+        <br />
+        {notReadyCount} <code className="not-ready-fragment">not ready</code>{' '}
+        fragments
+      </Typography>
 
       {hasSelection && (
         <Typography>
@@ -46,19 +46,19 @@ export function EditorInfoPanel(): JSX.Element {
         </Typography>
       )}
 
-      {!hasSelection && (
+      {!hasSelection && SHOW_HINTS && (
         <Typography>
           <code>Click</code> &mdash; select fragment
         </Typography>
       )}
 
-      {!isMultiSelection && (
+      {!isMultiSelection && SHOW_HINTS && (
         <Typography>
           <code>Ctrl+Click</code> &mdash; select multiple fragments
         </Typography>
       )}
 
-      {isSingleSelection && (
+      {isSingleSelection && SHOW_HINTS && (
         <Typography>
           <code>Alt+Left Click</code> &mdash; mark fragment as neighbor
         </Typography>
@@ -67,8 +67,12 @@ export function EditorInfoPanel(): JSX.Element {
       {isSingleSelection && !isActiveGroupReady && (
         <Typography>
           Fragment is <code className="not-ready-fragment">not ready</code>.
-          When done, mark it as ready in context menu &mdash;{' '}
-          <code>Right Click</code>
+          {SHOW_HINTS && (
+            <>
+              When done, mark it as ready in context menu &mdash;{' '}
+              <code>Right Click</code>
+            </>
+          )}
         </Typography>
       )}
 
@@ -78,13 +82,13 @@ export function EditorInfoPanel(): JSX.Element {
         </Typography>
       )}
 
-      {isMultiSelection && (
+      {isMultiSelection && SHOW_HINTS && (
         <Typography>
           <code>Ctrl+G</code> &mdash; unite selected fragments
         </Typography>
       )}
 
-      {hasSelection && (
+      {hasSelection && SHOW_HINTS && (
         <Typography>
           <code>Esc</code> &mdash; drop selection
         </Typography>

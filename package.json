@@ -32,7 +32,6 @@
     "web-vitals": "^2.1.4"
   },
   "scripts": {
-    "postinstall": "ncp node_modules/minizinc/dist public",
     "start": "cross-env GENERATE_SOURCEMAP=false react-scripts start",
     "build": "cross-env GENERATE_SOURCEMAP=false react-scripts build",
     "test": "react-scripts test",

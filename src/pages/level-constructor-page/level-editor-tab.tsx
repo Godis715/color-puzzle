@@ -228,7 +228,7 @@ export function LevelEditorTab(): JSX.Element {
       return path;
     });
 
-    const pathsAdjacency = getPathsAdjacencyList(paths, 3, 10);
+    const pathsAdjacency = getPathsAdjacencyList(paths, 0.5, 0.6);
 
     if (pathsAdjacency.error) {
       console.error(pathsAdjacency.error);
