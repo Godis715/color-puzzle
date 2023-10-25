@@ -1,7 +1,8 @@
-import { Typography } from '@mui/material';
+import { Button, Grid, Typography } from '@mui/material';
+import DoneIcon from '@mui/icons-material/Done';
 import { useEffect, useMemo, useState } from 'react';
 import { useSelector } from 'react-redux';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import paper from 'paper';
 
 import { actions, selectLevels } from 'src/features/levels';
@@ -29,6 +30,8 @@ const DEFAULT_COLOR = '#ededed';
 
 export function LevelPage(): JSX.Element {
   const { levelId } = useParams();
+
+  const navigate = useNavigate();
 
   const [hoveredGroupId, setHoveredGroupId] = useState<string | null>(null);
 
@@ -63,6 +66,12 @@ export function LevelPage(): JSX.Element {
   );
 
   useEffect(() => {
+    if (level && !level.isAvailable) {
+      navigate('..');
+    }
+  }, [level]);
+
+  useEffect(() => {
     if (
       level?.grouping.every(([, gid]) => (coloring[gid] ?? -1) >= 0) &&
       errorGroups.length === 0 &&
@@ -72,7 +81,7 @@ export function LevelPage(): JSX.Element {
     }
   }, [level, errorGroups, coloring]);
 
-  const setColoring = (newColoring: Record<string, number>): void => {
+  const setColoring = (newColoring: Record<string, number> | null): void => {
     if (levelId) setCurrentColoring({ levelId, coloring: newColoring });
   };
 
@@ -107,6 +116,30 @@ export function LevelPage(): JSX.Element {
     setColoring(newColoring);
   };
 
+  const handleGroupRightClick = (groupId: string): void => {
+    setColoring({ ...coloring, [groupId]: -1 });
+  };
+
+  const handleReset = (): void => {
+    setColoring(null);
+  };
+
+  const handleNextLevelClick = (): void => {
+    if (level?.nextLevelId) navigate(`../${level.nextLevelId}`);
+  };
+
+  const handlePrevLevelClick = (): void => {
+    if (level?.prevLevelId) navigate(`../${level.prevLevelId}`);
+  };
+
+  const handleShowSolution = (): void => {
+    if (level) setColoring(level.foundSolutionColoring);
+  };
+
+  if (!level?.isAvailable) {
+    return <></>;
+  }
+
   if (!level) {
     return (
       <div>
@@ -119,7 +152,19 @@ export function LevelPage(): JSX.Element {
   return (
     <div>
       <Link to="..">Back to levels</Link>
-      <Typography variant="h2">Level {levelId}</Typography>
+
+      <Grid display="flex" alignItems="center">
+        <Typography variant="h2">Level {levelId}</Typography>
+
+        {level.isPassed && (
+          <DoneIcon color="success" sx={{ fontSize: 48, marginLeft: 2 }} />
+        )}
+      </Grid>
+
+      <Typography>Goal: {level.colorsNumber} colors</Typography>
+
+      <Typography>Errors count: {errorGroups.length}</Typography>
+
       <LevelRenderer
         fragments={level.fragments ?? []}
         decorations={level.decorations ?? ''}
@@ -127,9 +172,22 @@ export function LevelPage(): JSX.Element {
         getGroupColor={getGroupColorById}
         onGroupHover={setHoveredGroupId}
         onGroupClick={handleGroupClick}
-        onGroupContextMenu={() => {}}
+        onGroupContextMenu={handleGroupRightClick}
       />
-      <div>Errors count: {errorGroups.length}</div>
+
+      <Button onClick={handleReset}>Reset</Button>
+
+      {level.prevLevelId && (
+        <Button onClick={handlePrevLevelClick}>Previous level</Button>
+      )}
+
+      {level.nextLevelId && level.foundSolutionColoring && (
+        <Button onClick={handleNextLevelClick}>Next level</Button>
+      )}
+
+      {level.foundSolutionColoring && (
+        <Button onClick={handleShowSolution}>Show solution</Button>
+      )}
     </div>
   );
 }

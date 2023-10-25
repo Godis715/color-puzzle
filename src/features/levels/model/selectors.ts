@@ -18,6 +18,9 @@ export const selectLevels = createSelector(selectLevelsState, (state) =>
       hasProgress: !!level.currentColoring,
       foundSolutionColoring: level.foundSolutionColoring,
       currentColoring: level.currentColoring,
+
+      prevLevelId: levels[i - 1]?.id ?? null,
+      nextLevelId: levels[i + 1]?.id ?? null,
     };
   })
 );

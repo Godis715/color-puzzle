@@ -16,20 +16,21 @@ export function LevelsListPage(): JSX.Element {
     <div>
       <Typography variant="h2">Levels</Typography>
       <List>
-        {levels.map((level) => (
+        {levels.map(({ id, isAvailable, isPassed, hasProgress }) => (
           <ListItemButton
-            disabled={!level.isAvailable}
+            key={id}
             component={Link}
-            to={level.id}
+            to={id}
+            disabled={!isAvailable}
           >
             <ListItemIcon>
-              {!level.isAvailable && <LockIcon />}
-              {level.isPassed && <DoneIcon color="success" />}
+              {!isAvailable && <LockIcon />}
+              {isPassed && <DoneIcon color="success" />}
             </ListItemIcon>
 
             <ListItemText
-              primary={`Level ${level.id}`}
-              secondary={level.hasProgress ? 'Continue' : null}
+              primary={`Level ${id}`}
+              secondary={hasProgress && !isPassed ? 'Continue' : null}
             />
           </ListItemButton>
         ))}
