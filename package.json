@@ -2,6 +2,7 @@
   "name": "color-puzzle",
   "version": "0.1.0",
   "private": true,
+  "homepage": "https://godis715.github.io/color-puzzle",
   "dependencies": {
     "@bem-react/classname": "^1.6.0",
     "@emotion/react": "^11.11.1",
