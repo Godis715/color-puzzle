@@ -25,6 +25,8 @@ import {
   selectLevelJson,
   selectGrouping,
 } from 'src/features/level-constructor';
+import { getPathsAdjacencyList } from 'src/features/level-constructor/lib/get-paths-adjacency';
+import { UndirectedGraph } from 'src/features/level-constructor/lib/undirected-graph';
 
 import { getFragmentColor } from './get-fragment-color';
 import { LevelRenderer } from './level-renderer';
@@ -32,8 +34,6 @@ import { ContextMenu } from './context-menu';
 import { EditorInfoPanel } from './editor-info-panel';
 
 import './style.scss';
-import { getPathsAdjacencyList } from 'src/features/level-constructor/lib/get-paths-adjacency';
-import { UndirectedGraph } from 'src/features/level-constructor/lib/undirected-graph';
 
 const CANVAS_ID = 'paper-canvas';
 

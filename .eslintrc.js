@@ -26,6 +26,9 @@ module.exports = {
   rules: {
     'prettier/prettier': 'error',
     'import/prefer-default-export': 'off',
+    'no-continue': 'warn',
+    'react/jsx-no-useless-fragment': 'off',
+    'react/require-default-props': 'off',
 
     'jsx-a11y/label-has-associated-control': [
       'error',
