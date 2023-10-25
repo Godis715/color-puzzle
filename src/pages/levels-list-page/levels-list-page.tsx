@@ -12,9 +12,14 @@ import { selectLevels } from 'src/features/levels';
 export function LevelsListPage(): JSX.Element {
   const levels = useSelector(selectLevels);
 
+  const passedCount = levels.filter((level) => level.isPassed).length;
+
   return (
     <div>
-      <Typography variant="h2">Levels</Typography>
+      <Typography variant="h4">
+        Levels ({passedCount}/{levels.length} passed)
+      </Typography>
+
       <List>
         {levels.map(({ id, isAvailable, isPassed, hasProgress }) => (
           <ListItemButton

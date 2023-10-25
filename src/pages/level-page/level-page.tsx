@@ -144,7 +144,7 @@ export function LevelPage(): JSX.Element {
     return (
       <div>
         <Link to="..">Back to levels</Link>
-        <Typography variant="h2">Level not found</Typography>
+        <Typography variant="h4">Level not found</Typography>
       </div>
     );
   }
@@ -154,7 +154,7 @@ export function LevelPage(): JSX.Element {
       <Link to="..">Back to levels</Link>
 
       <Grid display="flex" alignItems="center">
-        <Typography variant="h2">Level {levelId}</Typography>
+        <Typography variant="h4">Level {levelId}</Typography>
 
         {level.isPassed && (
           <DoneIcon color="success" sx={{ fontSize: 48, marginLeft: 2 }} />
@@ -181,9 +181,12 @@ export function LevelPage(): JSX.Element {
         <Button onClick={handlePrevLevelClick}>Previous level</Button>
       )}
 
-      {level.nextLevelId && level.foundSolutionColoring && (
-        <Button onClick={handleNextLevelClick}>Next level</Button>
-      )}
+      {level.foundSolutionColoring &&
+        (level.nextLevelId ? (
+          <Button onClick={handleNextLevelClick}>Next level</Button>
+        ) : (
+          <Button onClick={() => navigate('..')}>To menu</Button>
+        ))}
 
       {level.foundSolutionColoring && (
         <Button onClick={handleShowSolution}>Show solution</Button>
