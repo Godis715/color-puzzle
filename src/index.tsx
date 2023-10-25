@@ -2,7 +2,7 @@ import { Provider } from 'react-redux';
 import ReactDOM from 'react-dom/client';
 import { persistStore } from 'redux-persist';
 import { PersistGate } from 'redux-persist/integration/react';
-import { createBrowserRouter, Outlet, RouterProvider } from 'react-router-dom';
+import { createHashRouter, Outlet, RouterProvider } from 'react-router-dom';
 
 import { store } from 'src/store';
 
@@ -16,7 +16,7 @@ import { LevelConstructorPage } from './pages/level-constructor-page';
 import { LevelsListPage } from './pages/levels-list-page/levels-list-page';
 import { LevelPage } from './pages/level-page/level-page';
 
-const router = createBrowserRouter([
+const router = createHashRouter([
   {
     path: '/',
     element: <Outlet />,
@@ -27,7 +27,7 @@ const router = createBrowserRouter([
         element: <LevelConstructorPage />,
       },
       {
-        path: 'levels',
+        path: '',
         element: <Outlet />,
         children: [
           {
