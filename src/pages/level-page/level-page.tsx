@@ -1,13 +1,15 @@
-import { Button, Grid, Typography } from '@mui/material';
-import DoneIcon from '@mui/icons-material/Done';
+import paper from 'paper';
 import { useEffect, useMemo, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import paper from 'paper';
 
-import { actions, selectLevels } from 'src/features/levels';
+import DoneIcon from '@mui/icons-material/Done';
+import { Button, Grid, Typography } from '@mui/material';
+
 import { useActions } from 'src/shared/hooks';
+
 import { getAdjacencyList } from 'src/features/level-constructor/lib/undirected-graph';
+import { actions, selectLevels } from 'src/features/levels';
 
 import { LevelRenderer } from '../level-constructor-page/level-renderer';
 
@@ -154,7 +156,7 @@ export function LevelPage(): JSX.Element {
       <Link to="..">Back to levels</Link>
 
       <Grid display="flex" alignItems="center">
-        <Typography variant="h4">Level {levelId}</Typography>
+        <Typography variant="h4">{levelId}</Typography>
 
         {level.isPassed && (
           <DoneIcon color="success" sx={{ fontSize: 48, marginLeft: 2 }} />

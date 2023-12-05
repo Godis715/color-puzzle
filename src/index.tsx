@@ -3,7 +3,6 @@ import ReactDOM from 'react-dom/client';
 import { persistStore } from 'redux-persist';
 import { PersistGate } from 'redux-persist/integration/react';
 import { createHashRouter, Outlet, RouterProvider } from 'react-router-dom';
-
 import { store } from 'src/store';
 
 import '@fontsource/roboto/300.css';

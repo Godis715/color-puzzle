@@ -1,11 +1,12 @@
+import { useSelector } from 'react-redux';
+import { Link } from 'react-router-dom';
+
+import DoneIcon from '@mui/icons-material/Done';
+import LockIcon from '@mui/icons-material/Lock';
 import { ListItemText, Typography } from '@mui/material';
 import List from '@mui/material/List';
 import ListItemButton from '@mui/material/ListItemButton';
 import ListItemIcon from '@mui/material/ListItemIcon';
-import LockIcon from '@mui/icons-material/Lock';
-import DoneIcon from '@mui/icons-material/Done';
-import { useSelector } from 'react-redux';
-import { Link } from 'react-router-dom';
 
 import { selectLevels } from 'src/features/levels';
 
@@ -34,7 +35,7 @@ export function LevelsListPage(): JSX.Element {
             </ListItemIcon>
 
             <ListItemText
-              primary={`Level ${id}`}
+              primary={id}
               secondary={hasProgress && !isPassed ? 'Continue' : null}
             />
           </ListItemButton>

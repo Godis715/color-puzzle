@@ -117,14 +117,13 @@ export const selectHasSelection = createSelector(
   (activeGroupsIds) => activeGroupsIds.length > 0
 );
 
-export const selectLevelJson = createSelector(
+export const selectLevelDto = createSelector(
   selectLevelConstructorState,
-  (state) =>
-    JSON.stringify({
-      grouping: state.grouping,
-      neighborsGraph: state.neighborsGraph,
-      fragments: state.fragments,
-      decorations: state.decorations,
-      readyGroups: state.readyGroups,
-    })
+  (state) => ({
+    grouping: state.grouping,
+    neighborsGraph: state.neighborsGraph,
+    fragments: state.fragments,
+    decorations: state.decorations,
+    readyGroups: state.readyGroups,
+  })
 );

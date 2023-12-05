@@ -1,13 +1,16 @@
 /* eslint-disable jsx-a11y/no-noninteractive-element-interactions */
 /* eslint-disable jsx-a11y/click-events-have-key-events */
+import { cn } from '@bem-react/classname';
+import paper from 'paper';
 import { useEffect, useMemo, useState } from 'react';
 import { useSelector } from 'react-redux';
-import { cn } from '@bem-react/classname';
+
 import Box from '@mui/material/Box';
-import Grid from '@mui/material/Grid';
 import Button from '@mui/material/Button';
+import Grid from '@mui/material/Grid';
 import Typography from '@mui/material/Typography';
-import paper from 'paper';
+
+import { getGraphColoringBySat } from 'src/shared/lib/graph-coloring-solver';
 
 import {
   selectFragments,
@@ -16,7 +19,6 @@ import {
   selectMapFragmentIdToGroupId,
   selectNeighborsGraph,
 } from 'src/features/level-constructor';
-import { getGraphColoringBySat } from 'src/shared/lib/graph-coloring-solver';
 
 import { LevelRenderer } from './level-renderer';
 
@@ -57,36 +59,7 @@ export function LevelPreviewTab(): JSX.Element {
   const neighborsGraph = useSelector(selectNeighborsGraph);
 
   useEffect(() => {
-    const calculateGraphColoring = async () => {
-      const groupsIds = groups.map(({ id }) => id);
-
-      const mapGroupIdToIdx = Object.fromEntries(
-        groupsIds.map((id, i) => [id, i])
-      );
-
-      const encodedGraph = new Array(groupsIds.length)
-        .fill(null)
-        .map(() => [] as number[]);
-
-      neighborsGraph.forEach(([n1, n2]) => {
-        const i1 = mapGroupIdToIdx[n1];
-        const i2 = mapGroupIdToIdx[n2];
-        encodedGraph[i1].push(i2);
-        encodedGraph[i2].push(i1);
-      });
-
-      const solution = await getGraphColoringBySat(encodedGraph);
-
-      if (!solution) return;
-
-      const mapGroupToColor = Object.fromEntries(
-        solution.map((color, i) => [groupsIds[i], color])
-      );
-
-      setSolutionColoring(mapGroupToColor);
-    };
-
-    calculateGraphColoring();
+    getGraphColoringBySat(neighborsGraph).then(setSolutionColoring);
   }, []);
 
   const colorsNum = solutionColoring

@@ -56,7 +56,7 @@ code {
   & > * {
     position: absolute;
     height: 100%;
-    width: calc(100% - 2em);
+    width: calc(100%);
     margin: auto;
     top: 0;
     left: 0;
@@ -100,4 +100,14 @@ li.active {
 .workspace {
   display: flex;
   flex-direction: row;
+}
+
+#toolbar {
+  opacity: 0.6;
+  transition: 120ms;
+  transform: scale(0.75);
+  &:hover {
+    opacity: 1;
+    transform: scale(1);
+  }
 }

@@ -58,7 +58,27 @@ module.exports = {
         ],
         pathGroups: [
           {
-            pattern: 'src/**',
+            pattern: '@mui/**',
+            group: 'external',
+            position: 'after',
+          },
+          {
+            pattern: 'src/shared/**',
+            group: 'internal',
+            position: 'before',
+          },
+          {
+            pattern: 'src/store/**',
+            group: 'internal',
+            position: 'before',
+          },
+          {
+            pattern: 'src/features/**',
+            group: 'internal',
+            position: 'before',
+          },
+          {
+            pattern: 'src/pages/**',
             group: 'internal',
             position: 'before',
           },

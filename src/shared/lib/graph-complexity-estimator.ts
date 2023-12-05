@@ -36,22 +36,15 @@ function shuffleGraph(graph: Graph, random: () => number): Graph {
 function removeNode(graph: Graph, n: number): Graph {
   return graph
     .filter((_, i) => i !== n)
-    .map(
-      (neighbors) => neighbors
-        .filter((i) => i !== n)
-        .map((i) => i < n ? i : i - 1)
-    )
+    .map((neighbors) =>
+      neighbors.filter((i) => i !== n).map((i) => (i < n ? i : i - 1))
+    );
 }
 
 function removeDangling(graph: Graph): Graph {
-  const dangling = graph
-    .map((_, i) => i)
-    .filter((i) => graph[i].length < 2);
-  
-  return dangling.reduce(
-    (acc, n) => removeNode(acc, n),
-    graph
-  );
+  const dangling = graph.map((_, i) => i).filter((i) => graph[i].length < 2);
+
+  return dangling.reduce((acc, n) => removeNode(acc, n), graph);
 }
 
 export function estimateComplexity(

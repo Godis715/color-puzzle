@@ -5,8 +5,8 @@ const initPromise = MiniZinc.init({
 });
 
 export async function getGraphColoringBySat(
-  graph: Graph
-): Promise<Coloring | null> {
+  edges: [string, string][]
+): Promise<Record<string, number> | null> {
   try {
     await initPromise;
 
@@ -34,15 +34,19 @@ export async function getGraphColoringBySat(
       `
     );
 
-    const edges = graph
-      .map((neighbors, n1) => neighbors.map((n2) => [n1, n2]))
-      .flat()
-      .filter(([n1, n2]) => n1 < n2);
+    const nodes = Array.from(new Set(edges.flat()));
+
+    const mapNodeToIdx = Object.fromEntries(nodes.map((n, i) => [n, i]));
+
+    const encodedEdges = edges.map(([n1, n2]) => [
+      mapNodeToIdx[n1],
+      mapNodeToIdx[n2],
+    ]);
 
     model.addJson({
-      NUM_NODES: graph.length,
+      NUM_NODES: edges.length,
       NUM_EDGES: edges.length,
-      edges,
+      edges: encodedEdges,
     });
 
     const result = await model.solve({
@@ -56,7 +60,15 @@ export async function getGraphColoringBySat(
 
     if (!coloring || !Array.isArray(coloring)) return null;
 
-    return (coloring as Coloring).map((c) => c - 1);
+    return (coloring as Coloring)
+      .map((c) => c - 1)
+      .reduce(
+        (acc, color, i) => {
+          acc[nodes[i]] = color;
+          return acc;
+        },
+        {} as Record<string, number>
+      );
   } catch (err) {
     console.error(err);
     return null;

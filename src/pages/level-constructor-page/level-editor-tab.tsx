@@ -1,19 +1,22 @@
 /* eslint-disable jsx-a11y/no-noninteractive-element-interactions */
 /* eslint-disable jsx-a11y/click-events-have-key-events */
+import { saveAs } from 'file-saver';
+import paper from 'paper';
 import { useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
-import paper from 'paper';
-import { saveAs } from 'file-saver';
-import Button from '@mui/material/Button';
+
 import Box from '@mui/material/Box';
-import Grid from '@mui/material/Grid';
+import Button from '@mui/material/Button';
 import Dialog from '@mui/material/Dialog';
-import DialogTitle from '@mui/material/DialogTitle';
+import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import DialogContentText from '@mui/material/DialogContentText';
-import DialogActions from '@mui/material/DialogActions';
+import DialogTitle from '@mui/material/DialogTitle';
+import Grid from '@mui/material/Grid';
 
 import { useActions } from 'src/shared/hooks';
+import { getGraphColoringBySat } from 'src/shared/lib/graph-coloring-solver';
+
 import {
   actions,
   selectFragments,
@@ -22,16 +25,16 @@ import {
   Decorations,
   Fragment,
   selectMapFragmentIdToGroupId,
-  selectLevelJson,
+  selectLevelDto,
   selectGrouping,
 } from 'src/features/level-constructor';
 import { getPathsAdjacencyList } from 'src/features/level-constructor/lib/get-paths-adjacency';
 import { UndirectedGraph } from 'src/features/level-constructor/lib/undirected-graph';
 
-import { getFragmentColor } from './get-fragment-color';
-import { LevelRenderer } from './level-renderer';
 import { ContextMenu } from './context-menu';
 import { EditorInfoPanel } from './editor-info-panel';
+import { getFragmentColor } from './get-fragment-color';
+import { LevelRenderer } from './level-renderer';
 
 import './style.scss';
 
@@ -132,7 +135,7 @@ export function LevelEditorTab(): JSX.Element {
   const decorations = useSelector(selectDecorations);
   const groups = useSelector(selectGroups);
   const mapFragmentIdToGroupId = useSelector(selectMapFragmentIdToGroupId);
-  const levelJson = useSelector(selectLevelJson);
+  const levelDto = useSelector(selectLevelDto);
   const grouping = Object.fromEntries(useSelector(selectGrouping));
 
   useEffect(() => {
@@ -193,7 +196,18 @@ export function LevelEditorTab(): JSX.Element {
     });
   };
 
-  const handleDownloadLevelClick = (): void => {
+  const handleDownloadLevelClick = async (): Promise<void> => {
+    const coloring = await getGraphColoringBySat(levelDto.neighborsGraph);
+
+    if (!coloring) return;
+
+    const chromaticNumber = Math.max(...Object.values(coloring)) + 1;
+
+    const levelJson = JSON.stringify({
+      ...levelDto,
+      chromaticNumber,
+    });
+
     const blob = new Blob([levelJson], { type: 'text/plain;charset=utf-8' });
     saveAs(blob, 'level.json');
   };
